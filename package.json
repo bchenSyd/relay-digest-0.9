@@ -1,0 +1,19 @@
+{
+  "name": "relay-digest",
+  "version": "1.0.0",
+  "description": "bo1014240@IPP-LTP-6274DJL MINGW64 D:/relay-digest (master)\r $ for f in **/*.js; do mv -- \"$f\" \"${f%.js}.ts\";  done",
+  "main": "RelayPublic.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bochen2014/relay-digest.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bochen2014/relay-digest/issues"
+  },
+  "homepage": "https://github.com/bochen2014/relay-digest#readme"
+}
