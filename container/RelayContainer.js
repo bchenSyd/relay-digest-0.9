@@ -565,7 +565,7 @@ function createContainerComponent(
         }
       });
     }
-
+//******************************************************************************************/
     _handleFragmentDataUpdate(): void {
       if (!this.mounted) {
         return;
@@ -576,6 +576,7 @@ function createContainerComponent(
       );
       this.setState({queryData}, updateProfiler.stop);
     }
+//******************************************************************************************/    
 
     _updateFragmentPointers(
       props: Object,
@@ -727,6 +728,10 @@ function createContainerComponent(
       }
     }
 
+//props are generated via fragment spec;
+//here we are populating the new set of props after `ready`
+//   onReadyStateChange  --> ready --> _getQueryData --> this._hasStaleQueryData = true
+
     _getQueryData(
       props: Object
     ): Object {
@@ -742,14 +747,14 @@ function createContainerComponent(
           // Allow mock data to pass through without modification.
           queryData[propName] = propValue;
         } else {
-          queryData[propName] = fragmentResolver.resolve(
+          queryData[propName] = fragmentResolver.resolve(  //<-------  update queryData with new fetched data
             fragmentPointer.fragment,
             fragmentPointer.dataIDs
           );
         }
         if (this.state.queryData.hasOwnProperty(propName) &&
             queryData[propName] !== this.state.queryData[propName]) {
-          this._hasStaleQueryData = true;
+          this._hasStaleQueryData = true;  // queryData updated; set _hasStaleQueryData to true, which will cause shouldComponentUpdate return true;
         }
       });
       return queryData;
@@ -764,12 +769,13 @@ function createContainerComponent(
         return specShouldComponentUpdate();
       }
 
-      // Flag indicating that query data changed since previous render.
+     // here if we had _hasStaleQueryData, force update current component, and child will get updated accordingly
+     // http://www.webpackbin.com/EJ7Bs8mNM
       if (this._hasStaleQueryData) {
         this._hasStaleQueryData = false;
         return true;
       }
-
+//****************************************************************************************************************************** */
       if (this.context.relay !== nextContext.relay ||
           this.context.route !== nextContext.route) {
         return true;
@@ -800,11 +806,14 @@ function createContainerComponent(
     render(): React.Element<*> {
       if (ComponentClass) {
         return (
+          //************************** here is your component  ******************************* */
           <ComponentClass
+            //here is this.props refers to inside your component;
             {...this.props}
-            {...this.state.queryData}
-            ref={'component'} // eslint-disable-line react/no-string-refs
+            {...this.state.queryData}  //  const queryData = this.state.queryData[fragmentName];
             relay={this.state.relayProp}
+            // end this.props
+            ref={'component'} // eslint-disable-line react/no-string-refs
           />
         );
       } else {
