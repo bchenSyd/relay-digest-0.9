@@ -814,8 +814,10 @@ function createContainerComponent(
           //************************** here is your component  ******************************* */
           <ComponentClass
             //here is this.props refers to inside your component;
-            {...this.props}
-            {...this.state.queryData}  //  const queryData = this.state.queryData[fragmentName];
+            // #ignore this warning ; variable differ from ; bchen ; should use Component.getFrament('person') rather hard code at parent component's fragment declaration;
+            //if you component's fragment property doesn't comes from queryData, you get a warning :RelayContainer: component `%s` was rendered with variables ' that differ from the variable
+            {...this.props}        //                                                                      this.props <--      {person: { __dataID__ :'xvzfV90==', __fragment__ :{name:'fragmentName'} }}
+            {...this.state.queryData}  //  const queryData = this.state.queryData[fragmentName];      this.state.queryData <-- {person:  { __dataID__ :'xvzfV90==', age:34, name:'bchen'}  }
             relay={this.state.relayProp}
             // end this.props
             ref={'component'} // eslint-disable-line react/no-string-refs
