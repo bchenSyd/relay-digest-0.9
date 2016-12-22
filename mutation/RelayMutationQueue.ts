@@ -276,14 +276,17 @@ class RelayMutationQueue {
     this._batchRefreshQueuedData();
   }
 
+//bchen #when and where does queuestore get cleared?
   _handleCommitSuccess(
     transaction: PendingTransaction,
     response: Object
   ): void {
-    this._advanceCollisionQueue(transaction);
-    this._clearPendingTransaction(transaction);
 
-    this._refreshQueuedData();
+
+    this._advanceCollisionQueue(transaction);
+    this._clearPendingTransaction(transaction);  
+    this._refreshQueuedData();  //here is where queueRecords get removed
+
     this._storeData.handleUpdatePayload(
       transaction.getQuery(this._storeData),
       response[transaction.getCallName()],
@@ -313,11 +316,11 @@ class RelayMutationQueue {
       transaction.getQuery(this._storeData),
       transaction.getFiles(),
     );
-    this._storeData.getNetworkLayer().sendMutation(request);
+    this._storeData.getNetworkLayer().sendMutation(request);  //------------------------------->  Ajax.post()
 
     request.done(
-      result => this._handleCommitSuccess(transaction, result.response),
-      error => this._handleCommitFailure(transaction, error)
+      result => this._handleCommitSuccess(transaction, result.response),  //--------------------> onSuccess
+      error => this._handleCommitFailure(transaction, error)                // -------------> onFailure
     );
   }
 
@@ -375,7 +378,8 @@ class RelayMutationQueue {
   }
 
   _refreshQueuedData(): void {
-    this._storeData.clearQueuedData();
+    this._storeData.clearQueuedData();  
+    //ignore this; _queue is empty once ajax response received    
     this._queue.forEach(
       transaction => this._handleOptimisticUpdate(transaction)
     );

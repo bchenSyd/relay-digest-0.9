@@ -130,7 +130,8 @@ class RelayStoreData {
 // The object in the queued store also gets marked with a mutation id. 
 // When the mutation finally completes the record store is updated and the queued store value – which was marked with the mutation id – is deleted.
 //********************************************************************/
-// As far as the cached store … I have no idea.
+// http://hueypetersen.com/posts/2015/09/30/quick-look-at-the-relay-store/
+// "As far as the cached store … I have no idea."   Huey Petersen  eyston
     this._cacheManager = null;
     this._cachedRecords = cachedRecords;
     this._cachedRootCallMap = cachedRootCallMap;

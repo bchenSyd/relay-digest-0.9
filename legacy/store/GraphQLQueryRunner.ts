@@ -245,6 +245,9 @@ function runQueries(
           [...networkEvent, {type: 'CACHE_RESTORE_START'}]
         );
 
+//bchen  invoked when you press F5
+//  default implementation is to re-fetch from server becuase storeData.hasCacheManager() is false;
+//  if _cachemanager is injected -- you need to implement your own layer of persistence of relay store --- relay will call your cachemanager to restore your cached data to relay store;
         resolveImmediate(() => {
           if (storeData.hasCacheManager()) {
             const requiredQueryMap = mapObject(
