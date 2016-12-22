@@ -118,6 +118,8 @@ function splitAndFlattenQueries(
   return flattenedQueries;
 }
 
+
+//***************************** bchen ************************************* */
 function runQueries(
   storeData: RelayStoreData,
   querySet: RelayQuerySet,
@@ -128,11 +130,14 @@ function runQueries(
     RelayProfiler.profile('GraphQLQueryRunner.forceFetch') :
     RelayProfiler.profile('GraphQLQueryRunner.primeCache');
 
+  //ALL RELAY CONTAINERS SUBSCRIBE TO store::READYSTATE
   const readyState = new RelayReadyState(callback);
 
   const remainingFetchMap: {[queryID: string]: PendingFetch} = {};
   const remainingRequiredFetchMap: {[queryID: string]: PendingFetch} = {};
 
+  //onResolved is the callback relay provides to the network layer;
+  //it gets called once network layer has got data from graphql server
   function onResolved(pendingFetch: PendingFetch) {
     const pendingQuery = pendingFetch.getQuery();
     const pendingQueryID = pendingQuery.getID();
@@ -156,13 +161,13 @@ function runQueries(
         done: false,
         ready: true,
         stale: false,
-      }, [{type: 'NETWORK_QUERY_RECEIVED_REQUIRED'}]);
+      }, [{type: 'NETWORK_QUERY_RECEIVED_REQUIRED'}]); // ajax call returns the expected data;  but we want more...
     } else {
       readyState.update({
         done: true,
         ready: true,
         stale: false,
-      }, [{type: 'NETWORK_QUERY_RECEIVED_ALL'}]);
+      }, [{type: 'NETWORK_QUERY_RECEIVED_ALL'}]);   // ajax call returns the expected data;  bchen
     }
   }
 
@@ -285,5 +290,5 @@ function runQueries(
     },
   };
 }
-
+//***************************** bchen ************************************* */
 module.exports = GraphQLQueryRunner;

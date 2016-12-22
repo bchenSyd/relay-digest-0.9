@@ -381,11 +381,16 @@ function createContainerComponent(
         'RelayContainer.getPendingTransactions(): Expected a record in `%s`.',
         componentName
       );
+
+      
       const storeData = this.context.relay.environment.getStoreData();
       const mutationIDs = storeData.getClientMutationIDs(dataID);
       if (!mutationIDs) {
         return null;
       }
+
+
+
       const mutationQueue = storeData.getMutationQueue();
       return mutationIDs.map(id => mutationQueue.getTransaction(id));
     }

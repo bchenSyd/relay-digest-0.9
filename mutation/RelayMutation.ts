@@ -114,6 +114,11 @@ class RelayMutation<Tp: Object> {
    * needed), and if we omit fields here we might get odd consistency behavior
    * in the future when we add new views or modify existing ones.
    */
+
+  // Re-fetch the intersection of what may change (the fat query) and the data in the cache. 
+  // In addition to the cache of data Relay also remembers the queries used to fetch each item. 
+  // These are called tracked queries. 
+  // By intersecting the tracked and fat queries, Relay can query exactly the set of information the application needs to update and nothing more.
   getFatQuery(): RelayConcreteNode {
     invariant(
       false,

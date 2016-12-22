@@ -71,6 +71,7 @@ const {
 } = RelayRecord.MetadataKey;
 
 /**
+ * bchen  the core of relay
  * @internal
  *
  * `RelayRecordStore` is the central repository for all data fetched by the
@@ -78,11 +79,11 @@ const {
  * data with globally unique "data IDs".
  */
 class RelayRecordStore {
-  _cachedRecords: ?RecordMap;
+  _cachedRecords: ?RecordMap;  // cached records #3
   _cachedRootCallMap: RootCallMap;
-  _queuedRecords: ?RecordMap;
+  _queuedRecords: ?RecordMap;  // queued records  #1
   _nodeConnectionMap: NodeRangeMap;
-  _records: RecordMap;
+  _records: RecordMap;  // records #2  fetched by the client;
   _rootCallMap: RootCallMap;
   _storage: Array<RecordMap>;
 
@@ -161,13 +162,15 @@ class RelayRecordStore {
     return path;
   }
 
+
+//******************* further down bchen ************************************************************************ */
   /**
    * Returns whether a given record is affected by an optimistic update.
    */
   hasOptimisticUpdate(dataID: DataID): boolean {
     const queuedRecords = this._queuedRecords;
     return queuedRecords ?
-      queuedRecords.hasOwnProperty(dataID) :
+      queuedRecords.hasOwnProperty(dataID) : //whether 
       false;
   }
 
@@ -186,7 +189,7 @@ class RelayRecordStore {
     }
     return null;
   }
-
+//****************************************************************************************************************** */
   /**
    * Check whether a given record has received data for a deferred fragment.
    */
@@ -437,6 +440,7 @@ class RelayRecordStore {
   /**
    * Gets the first version of the record from the available caches.
    */
+  //bchen#dataOrder  queued records (muation sent out, response not received yet ) --> records --> cachedRecords
   _getRecord(dataID: DataID): ?Record {
     if (this._queuedRecords && this._queuedRecords.hasOwnProperty(dataID)) {
       return this._queuedRecords[dataID];

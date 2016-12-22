@@ -29,7 +29,7 @@ const RelayQueryPath = require('RelayQueryPath');
 const RelayQueryTracker = require('RelayQueryTracker');
 const RelayQueryWriter = require('RelayQueryWriter');
 const RelayRecord = require('RelayRecord');
-const RelayRecordStore = require('RelayRecordStore');
+const RelayRecordStore = require('./RelayRecordStore');
 const RelayRecordWriter = require('RelayRecordWriter');
 const RelayTaskQueue = require('RelayTaskQueue');
 
@@ -74,7 +74,8 @@ const typeField = RelayQuery.Field.build({
   type: 'String',
 });
 
-//this is how relay store is implemented;
+
+//this is how relay store is implemented; bchen
 /**
  * @internal
  *
@@ -111,6 +112,25 @@ class RelayStoreData {
     nodeRangeMap?: NodeRangeMap = {},
     rangeData?: GraphQLStoreRangeUtils = new GraphQLStoreRangeUtils(),
   ) {
+
+
+
+// bchen  the core of the relay frameork. the gut of the system
+    this._queryRunner = new GraphQLQueryRunner(this);
+    this._changeEmitter = new GraphQLStoreChangeEmitter(rangeData);
+    this._networkLayer = new RelayNetworkLayer(); 
+    this._mutationQueue = new RelayMutationQueue(this);    
+    this._nodeRangeMap = nodeRangeMap;
+    this._pendingQueryTracker = new RelayPendingQueryTracker(this);  
+    this._queryTracker = new RelayQueryTracker();
+
+
+//I have 3 record store; one for records, one for queued records (optimistic updates), and one for cached record
+// An optimistic mutation is going to immediately store a value in queuedRecords and every component watching that object is going to be updated to the queued/optimistic result. 
+// The object in the queued store also gets marked with a mutation id. 
+// When the mutation finally completes the record store is updated and the queued store value – which was marked with the mutation id – is deleted.
+//********************************************************************/
+// As far as the cached store … I have no idea.
     this._cacheManager = null;
     this._cachedRecords = cachedRecords;
     this._cachedRootCallMap = cachedRootCallMap;
@@ -119,13 +139,9 @@ class RelayStoreData {
       {cachedRootCallMap, rootCallMap},
       nodeRangeMap
     );
-    this._changeEmitter = new GraphQLStoreChangeEmitter(rangeData);
-    this._mutationQueue = new RelayMutationQueue(this);
-    this._networkLayer = new RelayNetworkLayer();
-    this._nodeRangeMap = nodeRangeMap;
-    this._pendingQueryTracker = new RelayPendingQueryTracker(this);
-    this._queryRunner = new GraphQLQueryRunner(this);
-    this._queryTracker = new RelayQueryTracker();
+
+//**************************************************************** */
+
     this._queuedRecords = queuedRecords;
     this._queuedStore = new RelayRecordStore(
       {cachedRecords, queuedRecords, records},
@@ -138,6 +154,10 @@ class RelayStoreData {
       {rootCallMap},
       nodeRangeMap
     );
+//end comments
+
+
+
     this._rangeData = rangeData;
     this._rootCallMap = rootCallMap;
     this._taskQueue = new RelayTaskQueue();
@@ -204,12 +224,15 @@ class RelayStoreData {
     return this._cacheManager;
   }
 
+
+
+//****************************** buck stops here   bchen ************************************************** */
   /**
    * Returns whether a given record is affected by an optimistic update.
    */
   hasOptimisticUpdate(dataID: DataID): boolean {
     dataID = this.getRangeData().getCanonicalClientID(dataID);
-    return this.getQueuedStore().hasOptimisticUpdate(dataID);
+    return this.getQueuedStore().hasOptimisticUpdate(dataID);  // of all my queued mutations, does any one 
   }
 
   /**
@@ -219,8 +242,14 @@ class RelayStoreData {
    */
   getClientMutationIDs(dataID: DataID): ?Array<ClientMutationID> {
     dataID = this.getRangeData().getCanonicalClientID(dataID);
-    return this.getQueuedStore().getClientMutationIDs(dataID);
+    return this.getQueuedStore().getClientMutationIDs(dataID); //returns me all mutation_ids that belongs to current node identified by NodeID (of type DataId)
   }
+//***************************************************************************************** */
+
+
+
+
+
 
   /**
    * Restores data for queries incrementally from cache.
@@ -507,7 +536,7 @@ class RelayStoreData {
   /**
    * Get the record writer for the base data.
    */
-  getRecordWriter(): RelayRecordWriter {
+  /*update record store */ getRecordWriter(): RelayRecordWriter {
     return new RelayRecordWriter(
       this._records,
       this._rootCallMap,
