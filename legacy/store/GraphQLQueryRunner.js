@@ -11,10 +11,9 @@
  */
 
 'use strict';
-
 const RelayFetchMode = require('RelayFetchMode');
 const RelayProfiler = require('RelayProfiler');
-const RelayReadyState = require('RelayReadyState');
+const RelayReadyState = require('../../store/RelayReadyState');
 
 const checkRelayQueryData = require('checkRelayQueryData');
 const diffRelayQuery = require('diffRelayQuery');
@@ -130,8 +129,12 @@ function runQueries(
     RelayProfiler.profile('GraphQLQueryRunner.forceFetch') :
     RelayProfiler.profile('GraphQLQueryRunner.primeCache');
 
+//************************************************************************************/
+  //the queryRunner has a readyState instance and call readyState.update during different stage
+  //everytime readyState.update() is called, it fire up 
   //ALL RELAY CONTAINERS SUBSCRIBE TO store::READYSTATE
   const readyState = new RelayReadyState(callback);
+//************************************************************************************/
 
   const remainingFetchMap: {[queryID: string]: PendingFetch} = {};
   const remainingRequiredFetchMap: {[queryID: string]: PendingFetch} = {};

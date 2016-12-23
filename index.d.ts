@@ -1,1 +1,1 @@
-declare function require(module:string):any
+//declare function require(module:string):any
