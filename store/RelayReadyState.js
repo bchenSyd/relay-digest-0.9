@@ -94,8 +94,18 @@ class RelayReadyState {
     }
     this._scheduled = true;
     resolveImmediate(() => {
-      this._scheduled = false;
-      this._onReadyStateChange(this._readyState);
+    this._scheduled = false;
+    
+    
+    // ==> GraphQLQueryRunner.run() ==> RelayReadyState.Update => RelayReadyState._mergeState() => RelayRenderer._onReadyStateChange
+    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:false, done: false,event:'network_start'})
+    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_start'})
+    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_failed'}) // no cachemanager implementation by default
+    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:true, done:false, event:'network_receive_all'})
+    this._onReadyStateChange(this._readyState); 
+
+
+
     });
   }
 }

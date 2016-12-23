@@ -510,12 +510,17 @@ function createContainerComponent(
         nextVariables = prepareVariables(rawVariables, metaRoute);
         validateVariables(initialVariables, nextVariables);
       }
+      
+      //ComponentDidMount -> setState -> _initialize -> updateFragmentPointers -> validateFragmentProp -> declared fragment isn't passed from parent React Component
+      //if you are using mock data, #ignore this warning
       this._updateFragmentPointers(
         props,
         context,
         nextVariables,
         prevVariables
       );
+
+
       this._updateFragmentResolvers(context.relay.environment);
       return {
         queryData: this._getQueryData(props),
@@ -650,13 +655,20 @@ function createContainerComponent(
                 if (!context.route.useMockData &&
                     !context.useFakeData &&
                     !this._didShowFakeDataWarning) {
+
+
+//make sure that the fragment declared within this React Component is referenced/composit in its parent's fragment declaration
+//"each component should declare what data they need. not declared by their parents"
                   const isValid = validateFragmentProp(
                     componentName,
-                    fragmentName,
-                    fragment,
-                    item,
+                    fragmentName, 
+                    fragment,  // ===> fragment is created by calling fragmentBuilder  -- the 2nd parameter passed to createContainer (Relay.createContainer(Component, fragmentBuilder)) 
+                    item, //========>  does item -- which is the property passed from parent Component -- has fragment (this component) defined?  if NOT, then it's an anti-pattern/anti pattern, throw warning...
                     prevVariables
                   );
+
+
+
                   this._didShowFakeDataWarning = !isValid;
                 }
               }
@@ -735,7 +747,7 @@ function createContainerComponent(
 
 //props are generated via fragment spec;
 //here we are populating the new set of props after `ready`
-//   onReadyStateChange  --> ready --> _getQueryData --> this._hasStaleQueryData = true
+//   onReadyStateChange  --> ready --> _getQueryData --> this._hasStaleQueryData = true -> shouldComponentUpdate return true -> React Component Re-Render
 
     _getQueryData(
       props: Object
@@ -813,8 +825,6 @@ function createContainerComponent(
         return (
           //************************** here is your component  ******************************* */
           <ComponentClass
-            //here is this.props refers to inside your component;
-            // #ignore this warning ; variable differ from ; bchen ; should use Component.getFrament('person') rather hard code at parent component's fragment declaration;
             //if you component's fragment property doesn't comes from queryData, you get a warning :RelayContainer: component `%s` was rendered with variables ' that differ from the variable
             {...this.props}        //                                                                      this.props <--      {person: { __dataID__ :'xvzfV90==', __fragment__ :{name:'fragmentName'} }}
             {...this.state.queryData}  //  const queryData = this.state.queryData[fragmentName];      this.state.queryData <-- {person:  { __dataID__ :'xvzfV90==', age:34, name:'bchen'}  }
@@ -1140,6 +1150,7 @@ function validateFragmentProp(
     !!prevVariables &&
     areEqual(prevVariables, fragment.getVariables())
   );
+  // # ignore this warning 
   if (!hasFragmentData) {
     const variables = fragment.getVariables();
     const fetchedVariables = RelayFragmentPointer.getFragmentVariables(
