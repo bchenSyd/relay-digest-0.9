@@ -191,6 +191,9 @@ class RelayMutationQueue {
     if (collisionKey) {
       this._collisionQueueMap[collisionKey] = [transaction];
     }
+
+    //bchen
+    //GraphQLQueryRunner doesn't run mutations; mutation is handled by RelayMutationQueue
     this._handleCommit(transaction);
   }
 

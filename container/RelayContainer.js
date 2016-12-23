@@ -1,15 +1,7 @@
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- * @providesModule RelayContainer
- * @flow
- */
-
+/* key info:
+  1. onReadyStateChange  : callback for the rootQuery
+  2. _handleFragmentDataUpdate : callback for mutations
+*/
 'use strict';
 
 const ErrorUtils = require('ErrorUtils');
@@ -288,6 +280,10 @@ function createContainerComponent(
       const {querySet, fragmentPointers} =
         this._createQuerySetAndFragmentPointers(nextVariables);
 
+
+//   bchen  gut of the system; graphql query runner, graphqlQueryRunner; initial load; dataready; critical info; mutation;
+//   Note: this is ONLY for the rootQuery , i.e. via GraphQLQueryRunner; the initial load
+//   for mutations, it's through a different channel which is _handleFragmentDataUpdate
       const onReadyStateChange = ErrorUtils.guard(readyState => {
         const {aborted, done, error, ready} = readyState;
         const isComplete = aborted || done || error;
@@ -566,17 +562,24 @@ function createContainerComponent(
             fragmentResolver.dispose();
             fragmentResolvers[fragmentName] = null;
           }
-        } else if (!fragmentResolver) {
+        } 
+
+
+//bchen  #gut of the system; QueryRunner + MutationRunner ; keywords: query runner , mutation runner , core, relay core, critical info;
+//******************************************************************************************/
+        //this is how Hight Order Component register itself for Relay store change; 
+        //and once relay store changes, HOC will re-render itself;
+        else if (!fragmentResolver) {
           fragmentResolver = environment.getFragmentResolver(
             fragmentPointer.fragment,
-            this._handleFragmentDataUpdate.bind(this)
+            this._handleFragmentDataUpdate.bind(this)   //register callback for relay store change  ===>   this.store.subscribe (this._handleFragmentDataUpdate)
           );
           fragmentResolvers[fragmentName] = fragmentResolver;
         }
       });
     }
-//******************************************************************************************/
-    _handleFragmentDataUpdate(): void {
+
+    _handleFragmentDataUpdate(): void {        //storeChange ---> GraphQLStoreChangeEmitter::_processSubscriber -> GraphQLStoreSingleQueryResolver::_handleChange -> this._handleFragmentDataUpdate
       if (!this.mounted) {
         return;
       }
@@ -587,6 +590,15 @@ function createContainerComponent(
       this.setState({queryData}, updateProfiler.stop);
     }
 //******************************************************************************************/    
+
+
+
+
+
+
+
+
+
 
     _updateFragmentPointers(
       props: Object,
@@ -745,8 +757,7 @@ function createContainerComponent(
       }
     }
 
-//props are generated via fragment spec;
-//here we are populating the new set of props after `ready`
+
 //   onReadyStateChange  --> ready --> _getQueryData --> this._hasStaleQueryData = true -> shouldComponentUpdate return true -> React Component Re-Render
 
     _getQueryData(
