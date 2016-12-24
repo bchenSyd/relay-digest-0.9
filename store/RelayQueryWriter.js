@@ -260,71 +260,22 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
     }
   }
 
+//********************************************************************************************************************************** */
+// this is **EXACTLY** the same pattern as readRelayQueryData.visitField and readRelayQueryData._readScalar
+//#how_is_query_visitor_used , #convert_ast_to_pojos
+//similar as readRelayQueryData, here we walk through the fetched root query payload, extract the json data - which are POJOs, and store them in a normalized store
+//
   visitField(
     field: RelayQuery.Field,
     state: WriterState
   ): void {
-    const {
-      recordID,
-      responseData,
-    } = state;
-    invariant(
-      this._writer.getRecordState(recordID) === EXISTENT,
-      'RelayQueryWriter: Cannot update a non-existent record, `%s`.',
-      recordID
-    );
-    invariant(
-      typeof responseData === 'object' && responseData !== null,
-      'RelayQueryWriter: Cannot update record `%s`, expected response to be ' +
-      'an object.',
-      recordID
-    );
-    const serializationKey = field.getSerializationKey();
-
-    const fieldData = responseData[serializationKey];
-    // Queried fields that are `undefined` are stored as nulls.
-    if (fieldData == null) {
-      if (fieldData === undefined) {
-        if (responseData.hasOwnProperty(serializationKey)) {
-          warning(
-            false,
-            'RelayQueryWriter: Encountered an explicit `undefined` field `%s` ' +
-            'on record `%s`, expected response to not contain `undefined`.',
-            field.getDebugName(),
-            recordID
-          );
-          return;
-        } else if (this._isOptimisticUpdate) {
-
-          return;
-        }
-      }
-
-      const storageKey = field.getStorageKey();
-      const prevValue = this._store.getField(recordID, storageKey);
-      // Always write to ensure data is stored in the correct recordStore.
-      this._writer.deleteField(recordID, storageKey);
-      if (prevValue !== null) {
-        this.recordUpdate(recordID);
-      }
-      return;
-    }
-
-    if (!field.canHaveSubselections()) {
-      this._writeScalar(field, state, recordID, fieldData);
-    } else if (field.isConnection()) {
-      this._writeConnection(field, state, recordID, fieldData);
-    } else if (field.isPlural()) {
-      this._writePluralLink(field, state, recordID, fieldData);
-    } else {
-      this._writeLink(field, state, recordID, fieldData);
-    }
+  
+    const serializationKey = field.getSerializationKey();  //here we get the __dataID__ ; this is a contract Relay made with GraphQL server; this is effectively the covenant;
+    const fieldData = responseData[serializationKey];      //here I got the POJO
+    this._writeScalar(field, state, recordID, fieldData);  //here I store it in store;
+    
   }
 
-  /**
-   * Writes the value for a 'scalar' field such as `id` or `name`. The response
-   * data is expected to be scalar values or arrays of scalar values.
-   */
   _writeScalar(
     field: RelayQuery.Field,
     state: WriterState,
@@ -332,27 +283,10 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
     nextValue: mixed
   ): void {
     const storageKey = field.getStorageKey();
-    const prevValue = this._store.getField(recordID, storageKey);
-
-    // always update the store to ensure the value is present in the appropriate
-    // data sink (records/queuedRecords), but only record an update if the value
-    // changed.
-    this._writer.putField(recordID, storageKey, nextValue);
-
-    // TODO: Flow: `nextValue` is an array, array indexing should work
-    if (
-      Array.isArray(prevValue) &&
-      Array.isArray(nextValue) &&
-      prevValue.length === nextValue.length &&
-      prevValue.every((prev, ii) => prev === (nextValue: any)[ii])
-    ) {
-      return;
-    } else if (prevValue === nextValue) {
-      return;
-    }
+    const prevValue = this._store.getField(recordID, storageKey);  
     this.recordUpdate(recordID);
   }
-
+//********************************************************************************************************************************** */
   /**
    * Writes data for connection fields such as `news_feed` or `friends`. The
    * response data is expected to be array of edge objects.

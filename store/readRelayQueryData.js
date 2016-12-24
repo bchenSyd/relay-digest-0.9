@@ -142,6 +142,18 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
     return result;
   }
 
+
+
+
+//**************************************************************************************************************** */
+// this is **EXACTLY** the same pattern as RelayQueryWriter.visitField and RelayQueryWriter._writeScalar
+// bchen  gut of the system; how is RelayQueryVisitor use? what does resolver do in relay? what are resolvers?
+// #convert_ast_to_pojos
+//*************************  this is how RelayContainer's fragment actually get resolved  ********************************** */
+// as you can see here, the passed in node is an AST node, it has metadata in it , most important one being storageKey
+// we then just retrieve the scalar value (POJO) by  recordStore[storageKey]
+//*************************************************************************************************************************** */
+//more reading: RelayQueryWriter::visitField  has a her-mogineous implementation  #how_is_query_visitor_used?
   visitField(node: RelayQuery.Field, state: State): void {
     // Check for range client IDs (eg. `someID_first(25)`) and unpack if
     // present, overriding `state`.
@@ -167,7 +179,7 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
     ) {
       this._readPageInfo(node, rangeInfo, state);
     } else if (!node.canHaveSubselections()) {
-      this._readScalar(node, state);
+      this._readScalar(node, state);                 //=============> from AST node to POJOs   , parse the query tree into plain Plain Old Javascript Objects
     } else if (node.isPlural()) {
       this._readPlural(node, state);
     } else if (node.isConnection()) {
@@ -177,6 +189,26 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
     }
     state.seenDataIDs[state.storeDataID] = true;
   }
+
+  _readScalar(node: RelayQuery.Field, state: State): void {
+    const storageKey = node.getStorageKey();
+    const field = this._recordStore.getField(state.storeDataID, storageKey);
+    if (field === undefined) {
+      state.isPartial = true;
+    } else if (field === null && !state.data) {
+      state.data = null;
+    } else {
+      this._setDataValue(
+        state,
+        node.getApplicationName(),
+        Array.isArray(field) ? field.slice() : field
+      );
+    }
+  }
+//************************************************************************************** */
+
+
+
 
   visitFragment(node: RelayQuery.Fragment, state: State): void {
     const dataID = getComponentDataID(state);
@@ -202,21 +234,6 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
     return state;
   }
 
-  _readScalar(node: RelayQuery.Field, state: State): void {
-    const storageKey = node.getStorageKey();
-    const field = this._recordStore.getField(state.storeDataID, storageKey);
-    if (field === undefined) {
-      state.isPartial = true;
-    } else if (field === null && !state.data) {
-      state.data = null;
-    } else {
-      this._setDataValue(
-        state,
-        node.getApplicationName(),
-        Array.isArray(field) ? field.slice() : field
-      );
-    }
-  }
 
   _readPlural(node: RelayQuery.Field, state: State): void {
     const storageKey = node.getStorageKey();

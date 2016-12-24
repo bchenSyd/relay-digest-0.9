@@ -49,6 +49,17 @@ import type RelayQuery from 'RelayQuery';
  *
  * @see RelayQueryVisitor
  */
+
+
+//mutate the query as we go;
+//  Greg Hurrell, relay deep dive / deepdive
+//  RelayStore.primeCache
+
+// Diff -> Split deffered (via RelayQueryTransform, traverse the query and split required and deffered queries) -> Subtract -> Print (we have an ast, but the graphql server doesn't speak ast, it speaks graphQL, so we print it)
+// the RelayQueryTransform is the read-write version of RelayQueryVisitor, it is able to change the query based on wheter the fragment is required or deffered;
+// RelayQueryVisitor ==> readRelayQueryData, RelayQueryWriter (write to store while reading the Query) ; RelayQueryTransform
+
+
 class RelayQueryTransform<Ts> extends RelayQueryVisitor<Ts> {
   traverse<Tn: RelayQuery.Node>(
     node: Tn,

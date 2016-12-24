@@ -1,3 +1,24 @@
+# relay architecture
+Greg Hurrell 's  Relay Deep Dive
+
+send query:
+schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST (Abstract Syntax Tree)
+Diff with Store data (available at client)  --> Split ( RelayQueryTransform, traverse the query ) -> print (graphQL server doesn't speak AST)
+                       ||
+                       ||
+                       \/
+                 GRAPHQL SERVER
+                       ||
+                       ||
+                       \/
+receive query payload:
+Write payload (traverse the query with response data and store data into store.   RelayQueryWriter, _writeScalar, write into normalized store)
+Notify subscribers (i.e. mutation case: RelayContainer's _handleFragmentDataUpdate)
+Read query data (another traversal , readRelayQueryData, _readScalar, better known as fragmentResolvers.resolve)
+Render
+
+
+
 # digest
 ## why relay?
 Note two important benefits in the GraphQL version:
