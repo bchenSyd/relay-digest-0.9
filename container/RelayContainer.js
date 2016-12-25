@@ -282,8 +282,9 @@ function createContainerComponent(
 
 
 //   bchen  gut of the system; graphql query runner, graphqlQueryRunner; initial load; dataready; critical info; mutation;
-//   Note: this is ONLY for the rootQuery , i.e. via GraphQLQueryRunner; the initial load
-//   for mutations, it's through a different channel which is _handleFragmentDataUpdate
+//   Note: this is ONLY for queries, namely rootQuery (initQuery) and following queries triggered by relay.setVariables ; we come here after GraphQLQueryRunner
+//   for mutations, it's through a different channel which is _handleFragmentDataUpdate; the invokation path is: mutation --> relayStore change -> store notify subscribers -> RelayContainer._handleFragmentDataUpdate
+      //registered in environment.primeCache (querySet, this.onReadyStateChange){  this._storeData.getQueryRunner().run(querySet, this.onReadyStateChange : callback); }
       const onReadyStateChange = ErrorUtils.guard(readyState => {
         const {aborted, done, error, ready} = readyState;
         const isComplete = aborted || done || error;
