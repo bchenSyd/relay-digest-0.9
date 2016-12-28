@@ -225,33 +225,20 @@ class RelayStoreData {
     return this._cacheManager;
   }
 
-
-
-//****************************** buck stops here   bchen ************************************************** */
-  /**
-   * Returns whether a given record is affected by an optimistic update.
-   */
+//**********************************************************************************************************************/
+//#bchen  hasOptimisticUpdate v.s. getPendingTransactions     buck stops here
   hasOptimisticUpdate(dataID: DataID): boolean {
     dataID = this.getRangeData().getCanonicalClientID(dataID);
-    return this.getQueuedStore().hasOptimisticUpdate(dataID);  // of all my queued mutations, does any one 
+    return this.getQueuedStore().hasOptimisticUpdate(dataID); 
   }
 
-  /**
-   * Returns a list of client mutation IDs for queued mutations whose optimistic
-   * updates are affecting the record corresponding the given dataID. Returns
-   * null if the record isn't affected by any optimistic updates.
-   */
+  //
   getClientMutationIDs(dataID: DataID): ?Array<ClientMutationID> {
     dataID = this.getRangeData().getCanonicalClientID(dataID);
-    return this.getQueuedStore().getClientMutationIDs(dataID); //returns me all mutation_ids that belongs to current node identified by NodeID (of type DataId)
+    //
+    return this.getQueuedStore().getClientMutationIDs(dataID); 
   }
-//***************************************************************************************** */
-
-
-
-
-
-
+//**********************************************************************************************************************/
   /**
    * Restores data for queries incrementally from cache.
    * It calls onSuccess when all the data has been loaded into memory.
@@ -395,9 +382,9 @@ class RelayStoreData {
     profiler.stop();
   }
 
-  /**
-   * Write the results of an update into the base record store.
-   */
+// this is the Relay store handler for mutation;
+// when a mutation gets commited, Store gets notified first (possibly twice in the case of optimistic result configured)
+// store then notify all its subscribers
   handleUpdatePayload(
     operation: RelayQuery.Operation,
     payload: {[key: string]: mixed},
@@ -419,6 +406,8 @@ class RelayStoreData {
     } else {
       recordWriter = this._getRecordWriterForMutation();
     }
+
+    //build up a 
     const writer = new RelayQueryWriter(
       this._queuedStore,
       recordWriter,
@@ -430,12 +419,17 @@ class RelayStoreData {
         updateTrackedQueries: false,
       }
     );
+
+    //core
+    //this reads your mutation getConfigs() and merge the mutation payload (could be optimistic payload) with current store data
+    //#bug: where does optimistic update not work for my relay-deep-dive example?  (store, viewer, game usally doesn't have an id bound with it as they are unique in a query)
     writeRelayUpdatePayload(
       writer,
       operation,
       payload,
       {configs, isOptimisticUpdate}
     );
+    // and finally notify store's subscribers , which are relay containers
     this._handleChangedAndNewDataIDs(changeTracker.getChangeSet());
     profiler.stop();
   }

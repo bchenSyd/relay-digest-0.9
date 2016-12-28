@@ -353,10 +353,11 @@ function createContainerComponent(
       this.pending = current;
     }
 
-    /**
-     * Determine if the supplied record reflects an optimistic update.
-     */
-    hasOptimisticUpdate(
+//*********************************************************************************** */
+  // hasOptimisticUpdate basically checks relay queuedRecord store, and see if it can find one item there for the given record DataId
+  //essentially queuedRecord.hasOwnProperty( reocrd.__dataId__)
+  // seach for #buck stops here
+    hasOptimisticUpdate(  
       record: Object
     ): boolean {
       const dataID = RelayRecord.getDataIDForObject(record);
@@ -368,29 +369,41 @@ function createContainerComponent(
       return this.context.relay.environment.getStoreData().hasOptimisticUpdate(dataID);
     }
 
-    /**
-     * Returns the pending mutation transactions affecting the given record.
-     */
+    //this pretty much overlaps with hasOptimisticUpdate ; the difference is getPendingTransactions is broader and includes all *INDIRECT* mutations that would impact passed in record
+    //the relay document says getPendingTransactions will returns  all the client mutations that *could* impact the passed in record
+    //please check  relay-digest\store\RelayRecordStore.js for implementation details
+    
+    //essentially queuedRecord[reocrd.__dataId__]  => NULL or Array<client_muation_id>()
     getPendingTransactions(record: Object): ?Array<RelayMutationTransaction> {
-      const dataID = RelayRecord.getDataIDForObject(record);
+      const dataID = RelayRecord.getDataIDForObject(record); 
       invariant(
         dataID != null,
         'RelayContainer.getPendingTransactions(): Expected a record in `%s`.',
         componentName
-      );
-
-      
+      );      
       const storeData = this.context.relay.environment.getStoreData();
-      const mutationIDs = storeData.getClientMutationIDs(dataID);
+
+
+       //getPendingTransactions will essentially call  RelayStoreData.getClientMutationIDs for the final result
+      //******************************************************** */
+      const mutationIDs = storeData.getClientMutationIDs(dataID);  //I'm the KEY!  it only returns none null if optimistic udpate is turned on;
+      //******************************************************** */
+
+
+
+
       if (!mutationIDs) {
         return null;
       }
-
-
-
       const mutationQueue = storeData.getMutationQueue();
-      return mutationIDs.map(id => mutationQueue.getTransaction(id));
+      return mutationIDs.map(id => mutationQueue.getTransaction(id)); //transform the result ; flesh it out with more info based on mutation id (client_mutation_id)
     }
+//*********************************************************************************** */
+
+
+
+
+
 
     /**
      * Checks if data for a deferred fragment is ready. This method should
@@ -565,9 +578,19 @@ function createContainerComponent(
           }
         } 
 
+//bchen  gut of the system; graphql query runner, graphqlQueryRunner; initial load; dataready; critical info; mutation;
+//****************************************************************************************** */
 
-//bchen  #gut of the system; QueryRunner + MutationRunner ; keywords: query runner , mutation runner , core, relay core, critical info;
-//******************************************************************************************/
+//   QueryRunner; triggered by first query and queries afterwards triggered by setVariable()
+//   Note: this is ONLY for queries, namely rootQuery (initQuery) and following queries triggered by relay.setVariables ; we come here after GraphQLQueryRunner
+//   for mutations, it's through a different channel which is _handleFragmentDataUpdate; the invokation path is: mutation --> relayStore change -> store notify subscribers -> RelayContainer._handleFragmentDataUpdate
+      //registered in environment.primeCache (querySet, this.onReadyStateChange){  this._storeData.getQueryRunner().run(querySet, this.onReadyStateChange : callback); }
+      const onReadyStateChange = ErrorUtils.guard(readyState => {
+       ...  
+    }
+
+//  Mutation path:
+
         //this is how Hight Order Component register itself for Relay store change; 
         //and once relay store changes, HOC will re-render itself;
         else if (!fragmentResolver) {
@@ -590,8 +613,7 @@ function createContainerComponent(
       );
       this.setState({queryData}, updateProfiler.stop);
     }
-//******************************************************************************************/    
-
+//******************************************************************************************/
 
 
 

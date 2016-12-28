@@ -188,9 +188,12 @@ function handleMerge(
   //
   // TODO #7167718: more efficient mutation/subscription writes
   for (const fieldName in payload) {
-    if (!Object.prototype.hasOwnProperty.call(payload, fieldName)) {
+    //************************************************************************************
+    // you don't need lodash!
+    if (!Object.prototype.hasOwnProperty.call(payload, fieldName)) {   
       continue;
     }
+    //************************************************************************************
     const payloadData = (payload[fieldName]: $FlowIssue); // #9357395
     if (typeof payloadData !== 'object' || payloadData == null) {
       continue;
@@ -198,10 +201,9 @@ function handleMerge(
 
     // check for valid data (has an ID or is an array) and write the field
     if (
-      ID in payloadData ||
-      // if the field is an argument-less root call, determine the corresponding
-      // root record ID
-      store.getDataID(fieldName) ||
+      ID in payloadData || // root field name doesn't have an ID field
+      // if the field is an argument-less root call, determine the corresponding root record ID
+      store.getDataID(fieldName) ||  //! catch!  this implies that the root field name in your mutaton must share the same field name of your store
       Array.isArray(payloadData)
     ) {
       mergeField(

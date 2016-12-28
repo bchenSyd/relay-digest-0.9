@@ -97,6 +97,49 @@ class GraphQLStoreChangeEmitter {
     );
   }
 
+//************************************************************************************ */
+//this is how changes are dispatched to RelayContainer._handleFragmentDataUpdate
+//a subscribedID is either graphql server node id , or a client id (e.g. client:1:s9V90876)
+/*
+ {
+   "123":{
+     "address":{
+       country: "US"             ==> when stored in to store, it gets normalized and assigned a client id as , e.g. client:1
+     },
+     "homeTown":{
+       "id":"456",
+       "name":"Adalaide"
+     },
+     "id":"",
+     "name":"Greg Hurrell"
+   }
+ }
+
+                  ||
+                  ||
+                  \/
+
+123:{
+  __dataId__: '123',
+  address:{
+    __dataId__:'client:1'
+  }
+  homeTown:{
+    __dataId__:'456'
+  }
+}
+
+456:{
+  __dataId__:456
+  name:"Adelaide"
+}
+
+"client:1":{
+  __dataId__:'client:1'
+  country:'US'
+}
+
+*/
   _processSubscriber(
     {subscribedIDs, callback}: Subscriber,
     subscriberIndex: number
@@ -121,7 +164,7 @@ class GraphQLStoreChangeEmitter {
       }
     }
   }
-
+//************************************************************************************ */
   /**
    * Ranges publish events for the entire range, not the specific view of that
    * range. For example, if "client:1" is a range, the event is on "client:1",

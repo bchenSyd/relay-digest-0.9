@@ -163,14 +163,14 @@ class RelayRecordStore {
   }
 
 
-//******************* further down bchen ************************************************************************ */
+//****************** buck stops here :  queuedRecords.hasOwnProperty(__dataID__) v.s. queuedRecords[__dataID__]   ********* */
   /**
    * Returns whether a given record is affected by an optimistic update.
    */
   hasOptimisticUpdate(dataID: DataID): boolean {
     const queuedRecords = this._queuedRecords;
     return queuedRecords ?
-      queuedRecords.hasOwnProperty(dataID) : //whether 
+      queuedRecords.hasOwnProperty(dataID) : //queuedRecords.hasOwnProperty(dataID) ==> can't be inherited;
       false;
   }
 
@@ -179,12 +179,13 @@ class RelayRecordStore {
    * updates are affecting the record corresponding the given dataID. Returns
    * null if the record isn't affected by any optimistic updates.
    */
+  //this answers getPendingTransactions() 
   getClientMutationIDs(dataID: DataID): ?Array<ClientMutationID> {
     const queuedRecords = this._queuedRecords;
     if (queuedRecords) {
-      const record = queuedRecords[dataID];
+      const record = queuedRecords[dataID]; //could be inherited; broader than hasOptimisticUpdate
       if (record) {
-        return record[MUTATION_IDS];
+        return record[MUTATION_IDS]; // null, nor Array of client muation ids;
       }
     }
     return null;
