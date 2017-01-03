@@ -182,16 +182,12 @@ function handleMerge(
 ): void {
   const store = writer.getRecordStore();
 
-  // because optimistic payloads may not contain all fields, we loop over
-  // the data that is present and then have to recurse the query to find
-  // the matching fields.
-  //
-  // TODO #7167718: more efficient mutation/subscription writes
+  //merge all fields in payload with their corresponding data in store (if found in store)
   for (const fieldName in payload) {
     //************************************************************************************
     // you don't need lodash!
-    if (!Object.prototype.hasOwnProperty.call(payload, fieldName)) {   
-      continue;
+    if (!Object.prototype.hasOwnProperty.call(payload, fieldName)) {
+      continue;  //ignore inherited properties
     }
     //************************************************************************************
     const payloadData = (payload[fieldName]: $FlowIssue); // #9357395
@@ -203,7 +199,7 @@ function handleMerge(
     if (
       ID in payloadData || // root field name doesn't have an ID field
       // if the field is an argument-less root call, determine the corresponding root record ID
-      store.getDataID(fieldName) ||  //! catch!  this implies that the root field name in your mutaton must share the same field name of your store
+      store.getDataID(fieldName) ||  // ** catch **  this implies that the root field name in your mutaton must share the same root field name in your store
       Array.isArray(payloadData)
     ) {
       mergeField(

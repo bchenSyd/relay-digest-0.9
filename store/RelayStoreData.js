@@ -325,7 +325,7 @@ class RelayStoreData {
   }
 
   /**
-   * Write the results of a query into the base record store.
+   * normalize  payload into store
    */
   handleQueryPayload(
     query: RelayQuery.Root,
@@ -407,7 +407,7 @@ class RelayStoreData {
       recordWriter = this._getRecordWriterForMutation();
     }
 
-    //build up a 
+    //build up a RelayQueryWriter
     const writer = new RelayQueryWriter(
       this._queuedStore,
       recordWriter,
@@ -420,10 +420,10 @@ class RelayStoreData {
       }
     );
 
-    //core
+   
     //this reads your mutation getConfigs() and merge the mutation payload (could be optimistic payload) with current store data
-    //#bug: where does optimistic update not work for my relay-deep-dive example?  (store, viewer, game usally doesn't have an id bound with it as they are unique in a query)
-    writeRelayUpdatePayload(
+    //#bug: why does optimistic update not work for my relay-deep-dive example?  (store, viewer, game usally doesn't have an id bound with it as they are unique in a query)
+    writeRelayUpdatePayload( // traversal\writeRelayUpdatePayload.js line 106 :  handleMerge
       writer,
       operation,
       payload,

@@ -121,6 +121,7 @@ class GraphQLStoreChangeEmitter {
 
 123:{
   __dataId__: '123',
+  __typename:'Person'   ==> note that __typename is kept in relay store
   address:{
     __dataId__:'client:1'
   }
@@ -131,6 +132,7 @@ class GraphQLStoreChangeEmitter {
 
 456:{
   __dataId__:456
+  __typename:'HomeTown'
   name:"Adelaide"
 }
 
