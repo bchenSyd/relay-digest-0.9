@@ -38,6 +38,8 @@ export type Record = {
   __status__?: number,
   __typename?: ?string,
 };
+
+export type Store = RecordMap
 export type RecordMap = {[key: DataID]: ?Record};
 
 const MetadataKey = {

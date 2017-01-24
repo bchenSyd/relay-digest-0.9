@@ -12,13 +12,52 @@ Diff with Store data (available at client)  --> Split ( RelayQueryTransform, tra
                        ||
                        \/
 receive query payload:
-Write payload (traverse the query with response data and store data into store.   RelayQueryWriter, _writeScalar, write into normalized store)
+Write payload (traverse the query with response data and store data into store. RelayQueryWriter, _writeScalar, write into normalized store)
 Notify subscribers (i.e. mutation case: RelayContainer's _handleFragmentDataUpdate)
 Read query data (another traversal , readRelayQueryData, _readScalar, better known as fragmentResolvers.resolve)
 Render
 
 
+class RelayStoreData {
+//********************************************************************/
+  //I have 3 record store; one for records, one for queued records (optimistic updates), and one for cached record
+  //  An optimistic mutation is going to immediately store a value in queuedRecords 
+  //  every component watching that object is going to be updated to the queued/optimistic result. 
+  // The object in the queued store also gets marked with a mutation id. 
+  // When the mutation finally completes the record store is updated and the queued store value – which was marked with the mutation id – is deleted.
+  // http://hueypetersen.com/posts/2015/09/30/quick-look-at-the-relay-store/
+  // "As far as the cached store … I have no idea."   Huey Petersen  eyston
+  _records: store;
+  _queuedRecords: store;
+  _cachedRecords: store;
 
+  _queuedStore: RelayRecordStore;
+  _recordStore: RelayRecordStore;
+  _cachedStore: RelayRecordStore;
+
+  _queryTracker: ?RelayQueryTracker;
+  _queryRunner: GraphQLQueryRunner;
+//********************************************************************/
+
+
+
+ if (hasItems(remainingFetchMap)) {
+      readyState.update({
+        done: false,
+        ready: true,
+        stale: false,
+      }, [{type: 'NETWORK_QUERY_RECEIVED_REQUIRED'}]); // $ajax call returns the expected data;  but we want more...
+    } else {
+      readyState.update({
+        done: true,
+        ready: true,
+        stale: false,
+      }, [{type: 'NETWORK_QUERY_RECEIVED_ALL'}]);   // $ajax call returns the expected data;  bchen
+    }
+
+
+
+    
 # digest
 ## why relay?
 Note two important benefits in the GraphQL version:

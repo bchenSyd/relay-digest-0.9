@@ -20,7 +20,7 @@ const RelayQuery = require('RelayQuery');
 const RelayQueryPath = require('RelayQueryPath');
 const RelayQueryRequest = require('RelayQueryRequest');
 const RelayQueryResultObservable = require('RelayQueryResultObservable');
-const RelayStoreData = require('RelayStoreData');
+const RelayStoreData = require('./RelayStoreData');
 const RelayVariables = require('RelayVariables');
 
 const deepFreeze = require('deepFreeze');
@@ -400,7 +400,7 @@ class RelayEnvironment {
     this._storeData.injectCacheManager(cacheManager);
   }
 
-  /**
+  /** 重要!
    * Primes the store by sending requests for any missing data that would be
    * required to satisfy the supplied set of queries.
    */

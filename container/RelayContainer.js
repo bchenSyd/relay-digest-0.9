@@ -31,7 +31,7 @@ const warning = require('warning');
 const {getComponentName, getReactComponent} = require('RelayContainerUtils');
 
 import type {ConcreteFragment} from 'ConcreteQuery';
-import type {FragmentResolver, LegacyRelayContext} from 'RelayEnvironment';
+import type {FragmentResolver, LegacyRelayContext} require('../store/RelayEnvironment');
 import type {DataID, RelayQuerySet} from 'RelayInternalTypes';
 import type {RelayQueryConfigInterface} from 'RelayQueryConfig';
 import type {
@@ -109,6 +109,7 @@ function createContainerComponent(
       rawVariables: Variables,
       request: Abortable,
     };
+
     state: {
       queryData: {[propName: string]: mixed},
       rawVariables: Variables,
@@ -282,10 +283,15 @@ function createContainerComponent(
 
 
 //   bchen  gut of the system; graphql query runner, graphqlQueryRunner; initial load; dataready; critical info; mutation;
-//   Note: this is ONLY for queries, namely rootQuery (initQuery) and following queries triggered by relay.setVariables ; we come here after GraphQLQueryRunner
-//   for mutations, it's through a different channel which is _handleFragmentDataUpdate; the invokation path is: mutation --> relayStore change -> store notify subscribers (search _processSubscriber) -> RelayContainer._handleFragmentDataUpdate
-//   registered in environment.primeCache (querySet, this.onReadyStateChange){  this._storeData.getQueryRunner().run(querySet, this.onReadyStateChange : callback); }
+//   Note: 重要 
+//   第一:  this is ONLY for queries, namely rootQuery (initQuery) and following queries triggered by relay.setVariables ; 
+//   we come here after GraphQLQueryRunner;
+//   第二: for mutations, it's through a different channel which is _handleFragmentDataUpdate; the invokation path is: 
+//   mutation --> relayStore change -> store notify subscribers (search _processSubscriber) -> RelayContainer._handleFragmentDataUpdate
 //   #see how relay store notify its subscribers after a change at legacy/store/GraphQLStoreChangeEmitter.js::_processSubscriber
+
+
+//   registered in environment.primeCache (querySet, this.onReadyStateChange){  this._storeData.getQueryRunner().run(querySet, this.onReadyStateChange : callback); }
       const onReadyStateChange = ErrorUtils.guard(readyState => {
         const {aborted, done, error, ready} = readyState;
         const isComplete = aborted || done || error;
@@ -345,11 +351,17 @@ function createContainerComponent(
         }
       }, 'RelayContainer.onReadyStateChange');
 
+
+      //  $ajax.send is dispatched here!
+      var request = undefined
+      if(forceFetch){
+          request= this.context.relay.environment.forceFetch(querySet, onReadyStateChange) 
+      }else{
+          request = this.context.relay.environment.primeCache(querySet, onReadyStateChange)
+      }
       const current = {
         rawVariables,
-        request: forceFetch ?
-          this.context.relay.environment.forceFetch(querySet, onReadyStateChange) :
-          this.context.relay.environment.primeCache(querySet, onReadyStateChange),
+        request
       };
       this.pending = current;
     }
@@ -726,7 +738,7 @@ function createContainerComponent(
             !Array.isArray(propValue),
             'RelayContainer: Invalid prop `%s` supplied to `%s`, expected a ' +
             'single record because the corresponding fragment is not plural ' +
-            '(i.e. does not have `@relay(plural: true)`).',
+            '(i.e. does not have `relay(plural: true)`).',
             fragmentName,
             componentName
           );
@@ -855,13 +867,14 @@ function createContainerComponent(
       );
     }
 
+    //
     render(): React.Element<*> {
       if (ComponentClass) {
         return (
           //************************** here is your component  ******************************* */
           <ComponentClass
             //if you component's fragment property doesn't comes from queryData, you get a warning :RelayContainer: component `%s` was rendered with variables ' that differ from the variable
-            {...this.props}        //                                                                      this.props <--      {person: { __dataID__ :'xvzfV90==', __fragment__ :{name:'fragmentName'} }}
+            {...this.props}        //                                                                 this.props <--      {person: { __dataID__ :'xvzfV90==', __fragment__ :{name:'fragmentName'} }}
             {...this.state.queryData}  //  const queryData = this.state.queryData[fragmentName];      this.state.queryData <-- {person:  { __dataID__ :'xvzfV90==', age:34, name:'bchen'}  }
             relay={this.state.relayProp}
             // end this.props

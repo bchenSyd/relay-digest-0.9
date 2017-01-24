@@ -12,7 +12,7 @@
 
 'use strict';
 
-const GraphQLQueryRunner = require('GraphQLQueryRunner');
+const GraphQLQueryRunner = require('../legacy/store/GraphQLQueryRunner');
 const GraphQLRange = require('GraphQLRange');
 const GraphQLStoreChangeEmitter = require('GraphQLStoreChangeEmitter');
 const GraphQLStoreRangeUtils = require('GraphQLStoreRangeUtils');
@@ -46,21 +46,21 @@ const {
   restoreQueriesDataFromCache,
 } = require('restoreRelayCacheData');
 
-import type {ChangeSet} from 'RelayChangeTracker';
-import type {GarbageCollectionScheduler} from 'RelayGarbageCollector';
+import type {ChangeSet } from 'RelayChangeTracker';
+import type {GarbageCollectionScheduler } from 'RelayGarbageCollector';
 import type {
   ClientMutationID,
-  DataID,
-  NodeRangeMap,
-  QueryPayload,
-  RelayQuerySet,
-  RootCallMap,
-  UpdateOptions,
+    DataID,
+    NodeRangeMap,
+    QueryPayload,
+    RelayQuerySet,
+    RootCallMap,
+    UpdateOptions,
 } from 'RelayInternalTypes';
-import type {QueryPath} from 'RelayQueryPath';
-import type {RecordMap} from 'RelayRecord';
-import type {TaskScheduler} from 'RelayTaskQueue';
-import type {Abortable, CacheManager, CacheProcessorCallbacks} from 'RelayTypes';
+import type {QueryPath } from 'RelayQueryPath';
+import { RecordMap, Store } from './RelayRecord';
+import type {TaskScheduler } from 'RelayTaskQueue';
+import type {Abortable, CacheManager, CacheProcessorCallbacks } from 'RelayTypes';
 
 const {CLIENT_MUTATION_ID} = RelayConnectionInterface;
 const {ID, ID_TYPE, NODE, NODE_TYPE, TYPENAME} = RelayNodeInterface;
@@ -82,80 +82,89 @@ const typeField = RelayQuery.Field.build({
  * Wraps the data caches and associated metadata tracking objects used by
  * GraphQLStore/RelayStore.
  */
+type store = RecordMap
 class RelayStoreData {
-  _cacheManager: ?CacheManager;
-  _cachedRecords: RecordMap;
-  _cachedRootCallMap: RootCallMap;
+//********************************************************************/
+  //I have 3 record store; one for records, one for queued records (optimistic updates), and one for cached record
+  //  An optimistic mutation is going to immediately store a value in queuedRecords 
+  //  every component watching that object is going to be updated to the queued/optimistic result. 
+  // The object in the queued store also gets marked with a mutation id. 
+  // When the mutation finally completes the record store is updated and the queued store value – which was marked with the mutation id – is deleted.
+  // http://hueypetersen.com/posts/2015/09/30/quick-look-at-the-relay-store/
+  // "As far as the cached store … I have no idea."   Huey Petersen  eyston
+  _records: store;
+  _queuedRecords: store;
+  _cachedRecords: store;
+
+  _queuedStore: RelayRecordStore;
+  _recordStore: RelayRecordStore;
   _cachedStore: RelayRecordStore;
+
+  _queryTracker: ?RelayQueryTracker;
+  _queryRunner: GraphQLQueryRunner;
+  //********************************************************************/
+
+
+
+  _cacheManager: ?CacheManager;
+  _cachedRootCallMap: RootCallMap;
   _changeEmitter: GraphQLStoreChangeEmitter;
   _garbageCollector: ?RelayGarbageCollector;
   _mutationQueue: RelayMutationQueue;
   _networkLayer: RelayNetworkLayer;
   _nodeRangeMap: NodeRangeMap;
   _pendingQueryTracker: RelayPendingQueryTracker;
-  _records: RecordMap;
-  _queuedRecords: RecordMap;
-  _queuedStore: RelayRecordStore;
-  _recordStore: RelayRecordStore;
-  _queryTracker: ?RelayQueryTracker;
-  _queryRunner: GraphQLQueryRunner;
+
   _rangeData: GraphQLStoreRangeUtils;
   _rootCallMap: RootCallMap;
   _taskQueue: RelayTaskQueue;
 
   constructor(
     cachedRecords?: RecordMap = {},
-    cachedRootCallMap?: RootCallMap = {},
     queuedRecords?: RecordMap = {},
     records?: RecordMap = {},
+    cachedRootCallMap?: RootCallMap = {},
     rootCallMap?: RootCallMap = {},
     nodeRangeMap?: NodeRangeMap = {},
     rangeData?: GraphQLStoreRangeUtils = new GraphQLStoreRangeUtils(),
   ) {
 
 
-
-// bchen  the core of the relay frameork. the gut of the system
+    // bchen  the core of the relay frameork. the gut of the system
     this._queryRunner = new GraphQLQueryRunner(this);
     this._changeEmitter = new GraphQLStoreChangeEmitter(rangeData);
-    this._networkLayer = new RelayNetworkLayer(); 
-    this._mutationQueue = new RelayMutationQueue(this);    
+    this._networkLayer = new RelayNetworkLayer();
+    this._mutationQueue = new RelayMutationQueue(this);
     this._nodeRangeMap = nodeRangeMap;
-    this._pendingQueryTracker = new RelayPendingQueryTracker(this);  
+    this._pendingQueryTracker = new RelayPendingQueryTracker(this);
     this._queryTracker = new RelayQueryTracker();
 
 
-//I have 3 record store; one for records, one for queued records (optimistic updates), and one for cached record
-// An optimistic mutation is going to immediately store a value in queuedRecords and every component watching that object is going to be updated to the queued/optimistic result. 
-// The object in the queued store also gets marked with a mutation id. 
-// When the mutation finally completes the record store is updated and the queued store value – which was marked with the mutation id – is deleted.
-//********************************************************************/
-// http://hueypetersen.com/posts/2015/09/30/quick-look-at-the-relay-store/
-// "As far as the cached store … I have no idea."   Huey Petersen  eyston
+
     this._cacheManager = null;
     this._cachedRecords = cachedRecords;
     this._cachedRootCallMap = cachedRootCallMap;
     this._cachedStore = new RelayRecordStore(
-      {cachedRecords, records},
-      {cachedRootCallMap, rootCallMap},
+      { cachedRecords, records },
+      { cachedRootCallMap, rootCallMap },
       nodeRangeMap
     );
 
-//**************************************************************** */
+    //**************************************************************** */
 
     this._queuedRecords = queuedRecords;
     this._queuedStore = new RelayRecordStore(
-      {cachedRecords, queuedRecords, records},
-      {cachedRootCallMap, rootCallMap},
+      { cachedRecords, queuedRecords, records },
+      { cachedRootCallMap, rootCallMap },
       nodeRangeMap
     );
     this._records = records;
     this._recordStore = new RelayRecordStore(
-      {records},
-      {rootCallMap},
+      { records },
+      { rootCallMap },
       nodeRangeMap
     );
-//end comments
+    //end comments
 
 
 
@@ -221,24 +230,24 @@ class RelayStoreData {
     return !!this._cacheManager;
   }
 
-  getCacheManager(): ?CacheManager {
+  getCacheManager(): ? CacheManager {
     return this._cacheManager;
   }
 
-//**********************************************************************************************************************/
-//#bchen  hasOptimisticUpdate v.s. getPendingTransactions     buck stops here
+  //**********************************************************************************************************************/
+  //#bchen  hasOptimisticUpdate v.s. getPendingTransactions     buck stops here
   hasOptimisticUpdate(dataID: DataID): boolean {
     dataID = this.getRangeData().getCanonicalClientID(dataID);
-    return this.getQueuedStore().hasOptimisticUpdate(dataID); 
+    return this.getQueuedStore().hasOptimisticUpdate(dataID);
   }
 
   //
   getClientMutationIDs(dataID: DataID): ?Array<ClientMutationID> {
     dataID = this.getRangeData().getCanonicalClientID(dataID);
     //
-    return this.getQueuedStore().getClientMutationIDs(dataID); 
+    return this.getQueuedStore().getClientMutationIDs(dataID);
   }
-//**********************************************************************************************************************/
+  //**********************************************************************************************************************/
   /**
    * Restores data for queries incrementally from cache.
    * It calls onSuccess when all the data has been loaded into memory.
@@ -382,12 +391,12 @@ class RelayStoreData {
     profiler.stop();
   }
 
-// this is the Relay store handler for mutation;
-// when a mutation gets commited, Store gets notified first (possibly twice in the case of optimistic result configured)
-// store then notify all its subscribers
+  // this is the Relay store handler for mutation;
+  // when a mutation gets commited, Store gets notified first (possibly twice in the case of optimistic result configured)
+  // store then notify all its subscribers
   handleUpdatePayload(
     operation: RelayQuery.Operation,
-    payload: {[key: string]: mixed},
+    payload: { [key: string]: mixed },
     {configs, isOptimisticUpdate}: UpdateOptions
   ): void {
     const profiler = RelayProfiler.profile('RelayStoreData.handleUpdatePayload');
@@ -420,14 +429,14 @@ class RelayStoreData {
       }
     );
 
-   
+
     //this reads your mutation getConfigs() and merge the mutation payload (could be optimistic payload) with current store data
     //#bug: why does optimistic update not work for my relay-deep-dive example?  (store, viewer, game usally doesn't have an id bound with it as they are unique in a query)
     writeRelayUpdatePayload( // traversal\writeRelayUpdatePayload.js line 106 :  handleMerge
       writer,
       operation,
       payload,
-      {configs, isOptimisticUpdate}
+      { configs, isOptimisticUpdate }
     );
     // and finally notify store's subscribers , which are relay containers
     this._handleChangedAndNewDataIDs(changeTracker.getChangeSet());
@@ -634,7 +643,7 @@ class RelayStoreData {
      */
     const getRecordsWithoutPaths = (recordMap: ?RecordMap) => {
       return mapObject(recordMap, record => {
-        const nextRecord = {...record};
+        const nextRecord = { ...record };
         delete nextRecord[RelayRecord.MetadataKey.PATH];
         return nextRecord;
       });

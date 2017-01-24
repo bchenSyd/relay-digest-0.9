@@ -164,13 +164,13 @@ function runQueries(
         done: false,
         ready: true,
         stale: false,
-      }, [{type: 'NETWORK_QUERY_RECEIVED_REQUIRED'}]); // ajax call returns the expected data;  but we want more...
+      }, [{type: 'NETWORK_QUERY_RECEIVED_REQUIRED'}]); // $ajax call returns the expected data;  but we want more...
     } else {
       readyState.update({
         done: true,
         ready: true,
         stale: false,
-      }, [{type: 'NETWORK_QUERY_RECEIVED_ALL'}]);   // ajax call returns the expected data;  bchen
+      }, [{type: 'NETWORK_QUERY_RECEIVED_ALL'}]);   // $ajax call returns the expected data;  bchen
     }
   }
 
