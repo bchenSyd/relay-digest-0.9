@@ -103,7 +103,13 @@ function createContainerComponent(
     _didShowFakeDataWarning: boolean;
     _fragmentPointers: {[key: string]: ?FragmentPointer};
     _hasStaleQueryData: boolean;
-    _fragmentResolvers: {[key: string]: ?FragmentResolver};
+//***********************************************************************************/
+//each fragment defined within the React Component will have a fragmentResolver allocated for it
+// all kept within _fragmentResolvers list;
+//e.g. _fragmentResolvers : {person: GraphQLStoreQueryResolver}
+       _fragmentResolvers: {[key: string]: ?FragmentResolver};
+//***********************************************************************************/
+
 
     pending: ?{
       rawVariables: Variables,
@@ -471,7 +477,7 @@ function createContainerComponent(
         return;
       }
       this.setState(
-        this._initialize(
+        this._initialize(  // _initialize will call _getQueryData to resolve fragment properties
           this.props,
           this.context,
           initialVariables,
@@ -577,7 +583,8 @@ function createContainerComponent(
         this.pending = null;
       }
     }
-
+  
+  /// build up fragmentResolve for each __fragment__ it contains
     _updateFragmentResolvers(environment): void {
       const fragmentPointers = this._fragmentPointers;
       const fragmentResolvers = this._fragmentResolvers;
@@ -590,20 +597,6 @@ function createContainerComponent(
             fragmentResolvers[fragmentName] = null;
           }
         } 
-
-//bchen  gut of the system; graphql query runner, graphqlQueryRunner; initial load; dataready; critical info; mutation;
-//****************************************************************************************** */
-
-//   QueryRunner; triggered by first query and queries afterwards triggered by setVariable()
-//   Note: this is ONLY for queries, namely rootQuery (initQuery) and following queries triggered by relay.setVariables ; we come here after GraphQLQueryRunner
-//   for mutations, it's through a different channel which is _handleFragmentDataUpdate; the invokation path is: mutation --> relayStore change -> store notify subscribers -> RelayContainer._handleFragmentDataUpdate
-      //registered in environment.primeCache (querySet, this.onReadyStateChange){  this._storeData.getQueryRunner().run(querySet, this.onReadyStateChange : callback); }
-      const onReadyStateChange = ErrorUtils.guard(readyState => {
-       ...  
-    }
-
-//  Mutation path:
-
         //this is how Hight Order Component register itself for Relay store change; 
         //and once relay store changes, HOC will re-render itself;
         else if (!fragmentResolver) {
@@ -611,11 +604,17 @@ function createContainerComponent(
             fragmentPointer.fragment,
             this._handleFragmentDataUpdate.bind(this)   //register callback for relay store change  ===>   this.store.subscribe (this._handleFragmentDataUpdate)
           );
-          fragmentResolvers[fragmentName] = fragmentResolver;
+
+          fragmentResolvers[fragmentName] = fragmentResolver; // see above line of code; the fragmentResolver is retrieved from environment; source of truce
         }
       });
     }
 
+
+//Query path:
+ //  search for: const onReadyStateChange = ErrorUtils.guard(readyState => {
+//  Mutation path:
+//   for mutations, it's through a different channel which is _handleFragmentDataUpdate; the invokation path is: mutation --> relayStore change -> store notify subscribers -> RelayContainer._handleFragmentDataUpdate
     _handleFragmentDataUpdate(): void {        //storeChange ---> GraphQLStoreChangeEmitter::_processSubscriber -> GraphQLStoreSingleQueryResolver::_handleChange -> this._handleFragmentDataUpdate
       if (!this.mounted) {
         return;
@@ -626,15 +625,6 @@ function createContainerComponent(
       );
       this.setState({queryData}, updateProfiler.stop);
     }
-//******************************************************************************************/
-
-
-
-
-
-
-
-
 
     _updateFragmentPointers(
       props: Object,
@@ -735,6 +725,7 @@ function createContainerComponent(
           dataIDOrIDs = dataIDs;
         } else {
           invariant(
+             invariant(
             !Array.isArray(propValue),
             'RelayContainer: Invalid prop `%s` supplied to `%s`, expected a ' +
             'single record because the corresponding fragment is not plural ' +
