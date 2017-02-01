@@ -99,7 +99,10 @@ function buildQuerySet(
         const rootQuery = RelayQuery.Root.create(
           concreteQuery,
           RelayMetaRoute.get(route.name),
-          route.params
+          
+          route.params  //unibet: this is how relay intergrated with relay route ; i.e. the prepareparams:(params, routeQuery)=> any  
+                        //is auto synced with query variables;
+
         );
         const identifyingArg = rootQuery.getIdentifyingArg();
         if (!identifyingArg || identifyingArg.value !== undefined) {

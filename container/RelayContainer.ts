@@ -527,11 +527,24 @@ function createContainerComponent(
       rawVariables: Variables,
       relayProp: RelayProp,
     } {
+
+
+/*
+Overriding Fragment Variables 
+
+Sometimes a parent needs to override the default variables of a child component. 
+To do this, we have to ensure that both the fragment and the container know about the custom variable. 
+
+unibet: why do we need to let container knows about query variable override and how it works?
+ */
       const rawVariables = getVariablesWithPropOverrides(
         spec,
         props,
         propVariables
       );
+
+
+
       let nextVariables = rawVariables;
       if (prepareVariables) {
         // TODO: Allow routes without names, #7856965.
@@ -1171,17 +1184,20 @@ function create(
   return ContainerConstructor;
 }
 
-/**
- * Returns whether the fragment `prop` contains a fragment pointer for the given
- * fragment's data, warning if it does not.
- */
+/* RelayContainer.getFragment enforcement */
 function validateFragmentProp(
   componentName: string,
   fragmentName: string,
-  fragment: RelayQuery.Fragment,
-  prop: Object,
-  prevVariables: ?Variables
+  fragment: RelayQuery.Fragment, // this is the fragment defined in relay spec (an instance of RelayQuery; this.__variables__   is the key here!)
+  prop: Object, //this is the fetched result; it is passed from Parent component;
+  prevVariables: ?Variables  // normally null
 ): boolean {
+
+  //RelayFragmentPointer.hasFragment( prop,fragment) is the key
+  //prop is react prop passed to RelayContainer; fragment is returned by RelayContainer fragment builder;
+  //this method check whether container Parent has passed in Query result
+  //the way how it do it is check fragment variables. see: 
+  //D:\__work\relay-digest\query\RelayFragmentPointer.js line 90
   const hasFragmentData = RelayFragmentPointer.hasFragment(
     prop,
     fragment

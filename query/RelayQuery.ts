@@ -167,6 +167,7 @@ class RelayQueryNode {
     );
     this.__concreteNode__ = concreteNode;
     this.__root__ = rootContext;
+
     this.__variables__ = variables;
 
     // lazily computed properties
@@ -313,6 +314,7 @@ class RelayQueryNode {
     return RelayMetaRoute.get(this.__root__.routeName);
   }
 
+  //fragment.getVariables goes here
   getVariables(): Variables {
     return this.__variables__;
   }

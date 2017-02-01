@@ -92,8 +92,8 @@ const RelayFragmentPointer = {
    * included in the fragment pointer results.
    */
   hasFragment(
-    record: Record,
-    fragment: RelayQuery.Fragment
+    record: Record, //React Property
+    fragment: RelayQuery.Fragment  //fragment builder result
   ): boolean {
     const variableList = RelayFragmentPointer.getFragmentVariables(
       record,
@@ -101,11 +101,28 @@ const RelayFragmentPointer = {
     );
     if (variableList != null) {
       return variableList.some(
-        vars => areEqual(vars, fragment.getVariables())
+        vars => areEqual(vars, fragment.getVariables())   // ==> fragment.getVariables()  see: <==
       );
     }
     return false;
   },
+
+ /* key: */
+  getFragmentVariables(
+    record: Record,  //React Property
+    fragment: RelayQuery.Fragment //fragment builder result
+  ): ?Array<Variables> {
+    const fragmentMap = record.__fragments__;
+    if (typeof fragmentMap === 'object' && fragmentMap != null) {
+      const fragmentID = fragment.getConcreteFragmentID();
+      /* $FlowFixMe(>=0.36.0) Flow error detected during
+       * the deploy of Flow v0.36.0. To see the error, remove this comment and
+       * run Flow */
+      return fragmentMap[fragmentID];
+    }
+    return null;
+  },
+
 
   getVariablesForID(record: Record, fragmentID: string): ?Variables {
     const fragmentMap = record.__fragments__;
@@ -125,24 +142,7 @@ const RelayFragmentPointer = {
     return null;
   },
 
-  /**
-   * Returns the list of variables whose results are available for the given
-   * concrete fragment.
-   */
-  getFragmentVariables(
-    record: Record,
-    fragment: RelayQuery.Fragment
-  ): ?Array<Variables> {
-    const fragmentMap = record.__fragments__;
-    if (typeof fragmentMap === 'object' && fragmentMap != null) {
-      const fragmentID = fragment.getConcreteFragmentID();
-      /* $FlowFixMe(>=0.36.0) Flow error detected during
-       * the deploy of Flow v0.36.0. To see the error, remove this comment and
-       * run Flow */
-      return fragmentMap[fragmentID];
-    }
-    return null;
-  },
+
 
   create(
     dataID: DataID,
