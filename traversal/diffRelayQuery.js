@@ -401,12 +401,17 @@ class RelayDiffQueryBuilder {
 
   /**
    * Diff a scalar field such as `name` or `id`.
+   * buck stops here;
+   * all the diff comes down to diff scalar values which is this method
    */
   diffScalar(
     field: RelayQuery.Field,
     dataID: DataID,
   ): ?DiffOutput {
     if (this._store.getField(dataID, field.getStorageKey()) === undefined) {
+      //I reckon that if you put a break point here; you should be able to hit this
+      //when return from event view back to carousel 
+      //some filed are missing according to David Dai (eventId and Suspended in competitors)
       return {
         diffNode: field,
         trackedNode: null,

@@ -1,5 +1,28 @@
 # relay architecture
 Greg Hurrell 's  Relay Deep Dive
+`query = {viewer{ store{id, name}}}` ==> babel-relay-plugin ==> AST ==> DIFF/SPLIT/DEFER ==> PRINT => server request
+                        http traffic
+flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:save  respone data
+flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:read  relay container
+
+ RelayQueryVisitor (read version, base Class)
+    + RelayQueryTransform (read-write version, for SPLITTING, Deferring..etc. transform graphql Query and send to server)
+    + RelayQueryWrite : read version; utilize AST to pluck responsedata (POJO) and save into _recordStore
+    + readRelayQueryData: read version; traverse(node, nextState)  use nextState to hold returned data (this is the props for relay container); 
+                          for RelayContainer to get response data from store using AST as key
+
+>AST is the most important thing in relay; it participate in the entire process of relay
+>you first write query in graphql , which is string; then babel-relay plug in parse that into AST
+>once you get AST, relay use it to DIFF/ SPLIT/ Defer/PRINT  ==> request
+>responst ==> utilze AST to serialize response into store; we effectively use AST to traverse response data and save them into store (RelayQueryWriter.js)
+>AST is the `thread`
+>once serialization is done, we notify RelayContainers that data is ready, they then call _getQueryData which is another traversal using query AST
+>(readRelayQueryData.js)
+
+
+
+
+
 
 send query:
 schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST (Abstract Syntax Tree)
