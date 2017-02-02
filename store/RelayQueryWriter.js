@@ -195,7 +195,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
 
   visitRoot(
     root: RelayQuery.Root,
-    state: WriterState
+    state: WriterState  // this is resonse.data JSON object
   ): void {
     const {path, recordID, responseData} = state;
     const recordState = this._store.getRecordState(recordID);
@@ -269,16 +269,35 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
 
   visitField(
     field: RelayQuery.Field,
-    state: WriterState
+    nextState: WriterState /*  this is the server response data   */
   ): void {
-  
+    const {
+      recordID,
+      responseData,
+    } = nextState;
     const serializationKey = field.getSerializationKey();  //here we get the __dataID__ ; this is a contract Relay made with GraphQL server; 
                                                           // this is effectively the covenant;
     const fieldData = responseData[serializationKey];      //here I got the POJO
-    this._writeScalar(field, state, recordID, fieldData);  //here I store it in store;
+
+   if (!field.canHaveSubselections()) {
+     //leaf node; no need to recursive
+     //buck stops here
+      this._writeScalar(field, state, recordID, fieldData);
+
+    } else if (field.isConnection()) {
+      this._writeConnection(field, state, recordID, fieldData);
+    } else if (field.isPlural()) {
+      this._writePluralLink(field, state, recordID, fieldData);
+    } else {
+      this._writeLink(field, state, recordID, fieldData);
+    }
     
   }
 
+   /**
+   * Writes the value for a 'scalar' field such as `id` or `name`. The response
+   * data is expected to be scalar values or arrays of scalar values.
+   */
   _writeScalar(
     field: RelayQuery.Field,
     state: WriterState,
@@ -286,7 +305,10 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
     nextValue: mixed
   ): void {
     const storageKey = field.getStorageKey();
-    const prevValue = this._store.getField(recordID, storageKey);  
+    // always update the store to ensure the value is present in the appropriate
+    // data sink (records/queuedRecords), but only record an update if the value
+    // changed.
+    this._writer.putField(recordID, storageKey, nextValue);
     this.recordUpdate(recordID);
   }
 //********************************************************************************************************************************** */

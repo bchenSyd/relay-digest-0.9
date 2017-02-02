@@ -146,15 +146,34 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
 
 
 //**************************************************************************************************************** */
-// this is **EXACTLY** the same pattern as RelayQueryWriter.visitField and RelayQueryWriter._writeScalar
-// bchen  gut of the system; how is RelayQueryVisitor use? what does resolver do in relay? what are resolvers?
-// #convert_ast_to_pojos
+ //once you get response from server; you save response to store by traversing the query AST (RelayQueryWriter) (to get serializationKey )
+ //once data is received; we need to notify RelayContainers, as them to re-render;
+ //below code is for RelayContainers to retrieve data from data , with the help of query AST (becuase RelayContainer has fragment which is tranpiled into AST)
+
+
+ //the Fragment act as a boundary,it's opaque to the current Container, 
+ //all it can do is to create a pointer and pass to its children Containers
+  visitFragment(node: RelayQuery.Fragment, state: State): void {
+    const dataID = getComponentDataID(state);
+    if (node.isContainerFragment() && !this._traverseFragmentReferences) {
+      //boundary encoutered; it's opaque data, need to pass to child Containers
+      state.seenDataIDs[dataID] = true;
+      const data = getDataObject(state);
+      RelayFragmentPointer.addFragment(data, node);  //we build a __fragment__ into current relay container's props
+    } else if (isCompatibleRelayFragmentType(
+      node,
+      this._recordStore.getType(dataID)
+    )) {
+      this.traverse(node, state);
+    }
+  }
+
 //*************************  this is how RelayContainer's fragment actually get resolved  ********************************** */
 // as you can see here, the passed in node is an AST node, it has metadata in it , most important one being storageKey
 // we then just retrieve the scalar value (POJO) by  recordStore[storageKey]
 //*************************************************************************************************************************** */
 //more reading: RelayQueryWriter::visitField  has a her-mogineous implementation  #how_is_query_visitor_used?
-  visitField(node: RelayQuery.Field, state: State): void {
+  visitField(node: RelayQuery.Field, out state: State /*used to hold the result*/): void {
     // Check for range client IDs (eg. `someID_first(25)`) and unpack if
     // present, overriding `state`.
     this._handleRangeInfo(node, state);
@@ -165,7 +184,7 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
     }
 
     if (node.isGenerated() && !this._traverseGeneratedFields) {
-      return;
+      return;  //Greg Hurrell: 'if you didn't ask for the data (but relay still needs it so it fetched it), we are not going to send it to you'
     }
     const rangeInfo = state.rangeInfo;
     if (
@@ -179,7 +198,9 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
     ) {
       this._readPageInfo(node, rangeInfo, state);
     } else if (!node.canHaveSubselections()) {
-      this._readScalar(node, state);                 //=============> from AST node to POJOs   , parse the query tree into plain Plain Old Javascript Objects
+      //********************************** */
+          this._readScalar(node, state);
+      //********************************** */
     } else if (node.isPlural()) {
       this._readPlural(node, state);
     } else if (node.isConnection()) {
@@ -190,7 +211,10 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
     state.seenDataIDs[state.storeDataID] = true;
   }
 
-  _readScalar(node: RelayQuery.Field, state: State): void {
+//RelayContainer::_getQueryData will finally goes here
+//visist(node, nextState)  
+//nextState hold the result which is to be used as RelayContainer's props
+  _readScalar(node: RelayQuery.Field, out nextState: State): void {
     const storageKey = node.getStorageKey();
     const field = this._recordStore.getField(state.storeDataID, storageKey);
     if (field === undefined) {
@@ -205,26 +229,8 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
       );
     }
   }
+
 //************************************************************************************** */
-
- //once you get response from server; you need to substract data from the query AST
- //the Fragment act as a boundary, becuause it's opaque to the current Container, 
- //all it can do is to create a pointer and pass to its children Containers
-  visitFragment(node: RelayQuery.Fragment, state: State): void {
-    const dataID = getComponentDataID(state);
-    if (node.isContainerFragment() && !this._traverseFragmentReferences) {
-      //boundary encoutered; it's opaque data, need to pass to child Containers
-      state.seenDataIDs[dataID] = true;
-      const data = getDataObject(state);
-      RelayFragmentPointer.addFragment(data, node);
-    } else if (isCompatibleRelayFragmentType(
-      node,
-      this._recordStore.getType(dataID)
-    )) {
-      this.traverse(node, state);
-    }
-  }
-
   _createState(state: State): State {
     // If we have a valid `dataID`, ensure that a record is created for it even
     // if we do not actually end up populating it with fields.
