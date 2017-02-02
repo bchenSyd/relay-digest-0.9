@@ -40,6 +40,8 @@ class RelayStoreData {
 //********************************************************************/
 
 
+ networkEvent.push({type: 'NETWORK_QUERY_START'}); //$ajax.send is registered here;
+
 
  if (hasItems(remainingFetchMap)) {
       readyState.update({

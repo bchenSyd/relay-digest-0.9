@@ -16,7 +16,7 @@ const RelayProfiler = require('RelayProfiler');
 const RelayReadyState = require('../../store/RelayReadyState');
 
 const checkRelayQueryData = require('checkRelayQueryData');
-const diffRelayQuery = require('diffRelayQuery');
+const diffRelayQuery = require('../../traversal/diffRelayQuery');
 const everyObject = require('everyObject');
 const flattenSplitRelayQueries = require('flattenSplitRelayQueries');
 const forEachObject = require('forEachObject');
@@ -164,13 +164,13 @@ function runQueries(
         done: false,
         ready: true,
         stale: false,
-      }, [{type: 'NETWORK_QUERY_RECEIVED_REQUIRED'}]); // $ajax call returns the expected data;  but we want more...
+      }, [{type: 'NETWORK_QUERY_RECEIVED_REQUIRED'}]); // $ajax.send() call returns the expected data;  but we want more...
     } else {
       readyState.update({
         done: true,
         ready: true,
         stale: false,
-      }, [{type: 'NETWORK_QUERY_RECEIVED_ALL'}]);   // $ajax call returns the expected data;  bchen
+      }, [{type: 'NETWORK_QUERY_RECEIVED_ALL'}]);   // $ajax.send() call returns the expected data;  bchen
     }
   }
 
@@ -194,7 +194,7 @@ function runQueries(
     if (fetchMode === RelayFetchMode.CLIENT) {
       forEachObject(querySet, query => {
         if (query) {
-          queries.push(...diffRelayQuery(
+          queries.push(...diffRelayQuery(   //some previousely fetched data is missing. we need to refetch
             query,
             storeData.getRecordStore(),
             storeData.getQueryTracker()
@@ -213,7 +213,7 @@ function runQueries(
 
     const networkEvent = [];
     if (flattenedQueries.length) {
-      networkEvent.push({type: 'NETWORK_QUERY_START'});
+      networkEvent.push({type: 'NETWORK_QUERY_START'});  //$ajax.send registered here!
     }
 
     flattenedQueries.forEach(query => {

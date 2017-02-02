@@ -487,7 +487,9 @@ class RelayDiffQueryBuilder {
             hasSplitQueries || !!itemState.trackedNode || !!itemState.diffNode;
           // split diff nodes into root queries
           if (itemState.diffNode) {
-            this.splitQuery(buildRoot(
+            //JIRA#9004  https://jira.unibet.com/browse/AUS-9004
+            //Desktop - Carousel - Bet screen only shows 3 runners in this scenario
+            this.splitQuery(buildRoot(  
               itemID,
               itemState.diffNode.getChildren(),
               RelayQueryPath.getName(path),
