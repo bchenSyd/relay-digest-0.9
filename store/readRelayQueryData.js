@@ -207,12 +207,13 @@ class RelayStoreReader extends RelayQueryVisitor<State> {
   }
 //************************************************************************************** */
 
-
-
-
+ //once you get response from server; you need to substract data from the query AST
+ //the Fragment act as a boundary, becuause it's opaque to the current Container, 
+ //all it can do is to create a pointer and pass to its children Containers
   visitFragment(node: RelayQuery.Fragment, state: State): void {
     const dataID = getComponentDataID(state);
     if (node.isContainerFragment() && !this._traverseFragmentReferences) {
+      //boundary encoutered; it's opaque data, need to pass to child Containers
       state.seenDataIDs[dataID] = true;
       const data = getDataObject(state);
       RelayFragmentPointer.addFragment(data, node);

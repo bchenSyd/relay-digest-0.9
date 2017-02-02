@@ -263,14 +263,17 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
 //********************************************************************************************************************************** */
 // this is **EXACTLY** the same pattern as readRelayQueryData.visitField and readRelayQueryData._readScalar
 //#how_is_query_visitor_used , #convert_ast_to_pojos
-//similar as readRelayQueryData, here we walk through the fetched root query payload, extract the json data - which are POJOs, and store them in a normalized store
-//
+//similar as readRelayQueryData, here we walk through the fetched root query payload, 
+//extract the json data - which are POJOs, and store them in a normalized store
+
+
   visitField(
     field: RelayQuery.Field,
     state: WriterState
   ): void {
   
-    const serializationKey = field.getSerializationKey();  //here we get the __dataID__ ; this is a contract Relay made with GraphQL server; this is effectively the covenant;
+    const serializationKey = field.getSerializationKey();  //here we get the __dataID__ ; this is a contract Relay made with GraphQL server; 
+                                                          // this is effectively the covenant;
     const fieldData = responseData[serializationKey];      //here I got the POJO
     this._writeScalar(field, state, recordID, fieldData);  //here I store it in store;
     

@@ -46,7 +46,10 @@ const RelayQuery = require('RelayQuery');
  * @see RelayQueryTransform
  */
 
-// hash tag: #how_is_query_visitor_used bchen  Greg Hurrell, relay deep dive / from query AST to POJOs
+// hash tag: #how_is_query_visitor_used  heter--ogenous  ; Root /Field (recursive) / fragment
+// Greg Hurrell, relay deep dive / from query AST 
+// (once responded from server, the query AST has data filled in) to POJOs (POJO is what is stored in relay _recordStore)
+
 // RelayQueryVisitory only walk through the query tree (AST nodes), it doesn't leverage nextState, so it's very baisc
 // What is interesting is in its derived children classess, being   readRelayQueryData and RelayQueryWriter
 // RelayQueryVisitor -> readRelayQueryData => RelayContainers has fragment, once container gets rendered, relay needs to traverse the Container Fragment and 

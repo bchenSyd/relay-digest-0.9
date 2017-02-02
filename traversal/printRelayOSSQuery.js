@@ -47,6 +47,8 @@ if (__DEV__) {
  *
  * `printRelayOSSQuery(query)` returns a string representation of the query. The
  * supplied `node` must be flattened (and not contain fragments).
+ * 
+ * this is Print process that Greg Hurrell talked about in his `relay deep dive`
  */
 function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
   const fragmentTexts = [];
@@ -81,8 +83,12 @@ function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
     });
   });
 
+  var queryString = [queryText, ...fragmentTexts].join(newLine.length ? newLine : ' ')
   return {
-    text: [queryText, ...fragmentTexts].join(newLine.length ? newLine : ' '),
+    //RelayNetworkLayer.js::fetchRelayQuery ==> RelayNetworkLayer::sendQueries==> RelayDefaultNetworkLayer::sendQueries
+    // ==> RelayDefaultNetworkLayer::_sendQuery =>  RelayQueryRequest::getQueryString ==>
+    //printedQuery = require('./printRelayOSSQuery')(this._query)
+    text: queryString,  //$ajax.send('graphql query string', variables)
     variables,
   };
 }
