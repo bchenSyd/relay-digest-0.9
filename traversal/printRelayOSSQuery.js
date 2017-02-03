@@ -42,14 +42,11 @@ if (__DEV__) {
   newLine = '\n';
 }
 
-/**
- * @internal
- *
- * `printRelayOSSQuery(query)` returns a string representation of the query. The
- * supplied `node` must be flattened (and not contain fragments).
- * 
- * this is Print process that Greg Hurrell talked about in his `relay deep dive`
- */
+
+//****************************************************************************************************************** */
+ // this is Print process that Greg Hurrell talked about in his `relay deep dive`
+ /* `printRelayOSSQuery(query)` returns a string representation of the query. The
+     supplied `node` must be flattened (and not contain fragments). */
 function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
   const fragmentTexts = [];
   const variableMap = new Map();
@@ -92,6 +89,13 @@ function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
     variables,
   };
 }
+//****************************************************************************************************************** */
+
+
+
+
+
+
 
 /**
  * Prints a query with (potentially) multiple root fields.
