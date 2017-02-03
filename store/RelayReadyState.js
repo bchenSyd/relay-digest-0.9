@@ -80,10 +80,10 @@ class RelayReadyState {
 
     //first load RelayRenderer handle dataReady
     //afterwards, RelayContainr handle dataReady
-    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done: false,event:'network_start'})
-    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_start'})
-    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_failed'}) // no cachemanager implementation by default
-    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:true, done:false, event:'network_receive_all'})
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done: false,event:'NETWORK_QUERY_START'})
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done:false,event:'CACHE_RESTORE_START'})
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done:false,event:'CACHE_RESTORE_FAILED'}) // cache is only available on react Native where react read disk for data before goes to network
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:true, done:false, event:'NETWORK_QUERY_RECEIVED_ALL'})
   _mergeState(  //State here means readyState. nothing to do with relay store
     nextReadyState: PartialReadyState,
     newEvents: ?Array<ReadyStateEvent>

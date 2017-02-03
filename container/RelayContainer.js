@@ -3,11 +3,12 @@ RelayRenderer is the parent of all relay containers. it handles the initial rend
 the broker of GraphQLQueryRunner and UI Components is call RelayReadyState 
 head to E:\relay-digest\store\RelayReadyState.js and have a look at _onReadyStateChange method (at the bottom)
 
-
+the UI only gets started once `NETWORK_QUERY_RECEIVED_ALL` event is received
+`relay gurantees that data will be ready before your components renders`
   1. initial load: RelayRenderer => render RealyContainer => 
-     RelayContianer::componentWillMount => this._initialize => _updateFragmentPointers
+     NETWORK_QUERY_RECEIVED_ALL => RelayContianer::componentWillMount => this._initialize => _updateFragmentPointers
      afterwards load:
-     RelayContainer::onReadyStateChange  : callback for the setVariables/forceFetch
+     NETWORK_QUERY_RECEIVED_ALL => RelayContainer::onReadyStateChange  : callback for the setVariables/forceFetch
 
   2. mutations:
     _handleFragmentDataUpdate
