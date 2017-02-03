@@ -1,6 +1,16 @@
 /* key info:
-  1. onReadyStateChange  : callback for the rootQuery
-  2. _handleFragmentDataUpdate : callback for mutations
+RelayRenderer is the parent of all relay containers. it handles the initial render of all components; after that, each container can handle graphqlQueryRunner events
+the broker of GraphQLQueryRunner and UI Components is call RelayReadyState 
+head to E:\relay-digest\store\RelayReadyState.js and have a look at _onReadyStateChange method (at the bottom)
+
+
+  1. initial load: RelayRenderer => render RealyContainer => 
+     RelayContianer::componentWillMount => this._initialize => _updateFragmentPointers
+     afterwards load:
+     RelayContainer::onReadyStateChange  : callback for the setVariables/forceFetch
+
+  2. mutations:
+    _handleFragmentDataUpdate
 */
 'use strict';
 
@@ -255,48 +265,14 @@ function createContainerComponent(
       return {fragmentPointers, querySet};
     }
 
-    _runVariables(
-      partialVariables: ?Variables,
-      callback: ?ComponentReadyStateChangeCallback,
-      forceFetch: boolean
-    ): void {
-      validateVariables(initialVariables, partialVariables);
-      const lastVariables = this.state.rawVariables;
-      const prevVariables =
-        this.pending ? this.pending.rawVariables : lastVariables;
-      const rawVariables = mergeVariables(prevVariables, partialVariables);
-      let nextVariables = rawVariables;
-      if (prepareVariables) {
-        const metaRoute = RelayMetaRoute.get(this.context.route.name);
-        nextVariables = prepareVariables(rawVariables, metaRoute);
-        validateVariables(initialVariables, nextVariables);
-      }
 
-      this.pending && this.pending.request.abort();
-
-      const completeProfiler = RelayProfiler.profile(
-        'RelayContainer.setVariables', {
-          containerName,
-          nextVariables,
-        }
-      );
-
-      // Because the pending fetch is always canceled, we need to build a new
-      // set of queries that includes the updated variables and initiate a new
-      // fetch.
-      const {querySet, fragmentPointers} =
-        this._createQuerySetAndFragmentPointers(nextVariables);
-
-
-//   bchen  gut of the system; graphql query runner, graphqlQueryRunner; initial load; dataready; critical info; mutation;
+//   gut of the system; graphql query runner, graphqlQueryRunner; initial load; dataready; critical info; mutation;
 //   Note: 重要 
 //   第一:  this is ONLY for queries, namely rootQuery (initQuery) and following queries triggered by relay.setVariables ; 
 //   we come here after GraphQLQueryRunner;
 //   第二: for mutations, it's through a different channel which is _handleFragmentDataUpdate; the invokation path is: 
 //   mutation --> relayStore change -> store notify subscribers (search _processSubscriber) -> RelayContainer._handleFragmentDataUpdate
 //   #see how relay store notify its subscribers after a change at legacy/store/GraphQLStoreChangeEmitter.js::_processSubscriber
-
-
 //   registered in environment.primeCache (querySet, this.onReadyStateChange){  this._storeData.getQueryRunner().run(querySet, this.onReadyStateChange : callback); }
       const onReadyStateChange = ErrorUtils.guard(readyState => {
         const {aborted, done, error, ready} = readyState;
@@ -358,6 +334,40 @@ function createContainerComponent(
       }, 'RelayContainer.onReadyStateChange');
 
 
+//   triggered by either setVariables or forceFetch;
+//   reference onReadyStateChange as its callback to networkLayer when data is ready
+    _runVariables(
+      partialVariables: ?Variables,
+      callback: ?ComponentReadyStateChangeCallback,
+      forceFetch: boolean
+    ): void {
+      validateVariables(initialVariables, partialVariables);
+      const lastVariables = this.state.rawVariables;
+      const prevVariables =
+        this.pending ? this.pending.rawVariables : lastVariables;
+      const rawVariables = mergeVariables(prevVariables, partialVariables);
+      let nextVariables = rawVariables;
+      if (prepareVariables) {
+        const metaRoute = RelayMetaRoute.get(this.context.route.name);
+        nextVariables = prepareVariables(rawVariables, metaRoute);
+        validateVariables(initialVariables, nextVariables);
+      }
+
+      this.pending && this.pending.request.abort();
+
+      const completeProfiler = RelayProfiler.profile(
+        'RelayContainer.setVariables', {
+          containerName,
+          nextVariables,
+        }
+      );
+
+      // Because the pending fetch is always canceled, we need to build a new
+      // set of queries that includes the updated variables and initiate a new
+      // fetch.
+      const {querySet, fragmentPointers} =
+        this._createQuerySetAndFragmentPointers(nextVariables);
+
       //  $ajax.send is dispatched here!
       var request = undefined
       if(forceFetch){
@@ -371,6 +381,7 @@ function createContainerComponent(
       };
       this.pending = current;
     }
+
 
 //*********************************************************************************** */
   // hasOptimisticUpdate basically checks relay queuedRecord store, and see if it can find one item there for the given record DataId
@@ -472,6 +483,8 @@ function createContainerComponent(
       );
     }
 
+    //this is why Relay says "Relay will gurantee that data is ready before your component renders"
+    //data fetching is 
     componentWillMount(): void {
       if (this.context.route.useMockData) {
         return;
@@ -527,7 +540,6 @@ function createContainerComponent(
       rawVariables: Variables,
       relayProp: RelayProp,
     } {
-
 
 /*
 Overriding Fragment Variables 
@@ -796,9 +808,6 @@ unibet: why do we need to let container knows about query variable override and 
         });
       }
     }
-
-
-//   onReadyStateChange  --> ready --> _getQueryData --> this._hasStaleQueryData = true -> shouldComponentUpdate return true -> React Component Re-Render
 
     _getQueryData(
       props: Object

@@ -78,7 +78,13 @@ class RelayReadyState {
     this._mergeState(nextReadyState, newEvents);
   }
 
-  _mergeState(
+    //first load RelayRenderer handle dataReady
+    //afterwards, RelayContainr handle dataReady
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done: false,event:'network_start'})
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_start'})
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_failed'}) // no cachemanager implementation by default
+    //RelayReadyState -- ready: false => RelayRenderer/RelayContainr::onReadyStateChange({ready:true, done:false, event:'network_receive_all'})
+  _mergeState(  //State here means readyState. nothing to do with relay store
     nextReadyState: PartialReadyState,
     newEvents: ?Array<ReadyStateEvent>
   ): void {
@@ -96,15 +102,11 @@ class RelayReadyState {
     resolveImmediate(() => {
     this._scheduled = false;
     
-    
-    // ==> GraphQLQueryRunner.run() ==> RelayReadyState.Update => RelayReadyState._mergeState() => RelayRenderer._onReadyStateChange
-    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:false, done: false,event:'network_start'})
-    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_start'})
-    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:false, done:false,event:'restore_from_cache_failed'}) // no cachemanager implementation by default
-    //RelayReadyState -- ready: false => RelayRenderer::onReadyStateChange({ready:true, done:false, event:'network_receive_all'})
-    this._onReadyStateChange(this._readyState); 
-
-
+    //RelayReadyState is the glue for RelayContainr and GraphqlQLQueryRunner
+    // this is how RelayContainr get notified on network completion
+    // GraphqlQLQueryRunner talks with networklayer and get notified once response received from network layer; ==> it fires up _onReadyStateChange 
+    // RelayContainr registeres its onReadyStateChange to RelayReadyState (multiplue relay containers are grestied)
+    this._onReadyStateChange(this._readyState); //a very good entry point!
 
     });
   }
