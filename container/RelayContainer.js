@@ -366,16 +366,19 @@ function createContainerComponent(
       // Because the pending fetch is always canceled, we need to build a new
       // set of queries that includes the updated variables and initiate a new
       // fetch.
+//****************************************************************************************************************************************************
+//******************************  this is raw query that is about to send to server  *****************************************************************
       const {querySet, fragmentPointers} =
-        this._createQuerySetAndFragmentPointers(nextVariables);
+        this._createQuerySetAndFragmentPointers(nextVariables); //build the raw querySet
 
       //  $ajax.send is dispatched here!
       var request = undefined
       if(forceFetch){
           request= this.context.relay.environment.forceFetch(querySet, onReadyStateChange) 
       }else{
-          request = this.context.relay.environment.primeCache(querySet, onReadyStateChange)
+          request = this.context.relay.environment.primeCache(querySet, onReadyStateChange) //RelayEnvironment.PrimeCache() => graphqlQueryRunner => diffQuery => flatternQuery => NETWORK_QUERY_START
       }
+//****************************************************************************************************************************************************      
       const current = {
         rawVariables,
         request

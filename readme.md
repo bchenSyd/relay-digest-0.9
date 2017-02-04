@@ -21,10 +21,26 @@ flatterned record store <======= AST to build serializationKey, which is the dat
 
 
 
+# How is RelayQuery sent to server?   
+  RelayContainer build the raw querySet => pass the relayEnvironment.primeCache -> graphqlQueryRunner.runQueries{
+              storeData.getTaskQueue().enqueue(function () {
+              var queries = [];
+              if (fetchMode === require('./RelayFetchMode').CLIENT) {
+                require('fbjs/lib/forEachObject')(querySet, function (query) {
+                  if (query) {
+                    var diffedQuery = require('./diffRelayQuery')(query, storeData.getRecordStore(), storeData.getQueryTracker())
+                    queries.push.apply(queries, diffedQuery);
+                  }
+                });
 
+                    var flattenedQueries = splitAndFlattenQueries(storeData, queries);
 
+                  if (flattenedQueries.length) {
+                         networkEvent.push({ type: 'NETWORK_QUERY_START' });
+                  }   
+}
 
-send query:
+# Relay Deep Dive by Greg Hurrell
 schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST (Abstract Syntax Tree)
 Diff with Store data (available at client)  --> Split ( RelayQueryTransform, traverse the query ) -> print (graphQL server doesn't speak AST)
                        ||
