@@ -20,7 +20,7 @@ const RelayQuery = require('RelayQuery');
 const RelayQueryPath = require('RelayQueryPath');
 const RelayQueryRequest = require('RelayQueryRequest');
 const RelayQueryResultObservable = require('RelayQueryResultObservable');
-const RelayStoreData = require('./RelayStoreData');
+const RelayStoreData = require('RelayStoreData');
 const RelayVariables = require('RelayVariables');
 
 const deepFreeze = require('deepFreeze');
@@ -31,38 +31,38 @@ const recycleNodesInto = require('recycleNodesInto');
 const relayUnstableBatchedUpdates = require('relayUnstableBatchedUpdates');
 const warning = require('warning');
 
-import type {ConcreteOperationDefinition } from 'ConcreteQuery';
+import type {ConcreteOperationDefinition} from 'ConcreteQuery';
 import type {
   CacheConfig,
-    Disposable,
-    Environment,
-    OperationSelector,
-    RelayCore,
-    Selector,
-    Snapshot,
+  Disposable,
+  Environment,
+  OperationSelector,
+  RelayCore,
+  Selector,
+  Snapshot,
 } from 'RelayEnvironmentTypes';
 import type {
   DataID,
-    QueryPayload,
-    RelayQuerySet,
+  QueryPayload,
+  RelayQuerySet,
 } from 'RelayInternalTypes';
 import type RelayMutation from 'RelayMutation';
 import type RelayMutationTransaction from 'RelayMutationTransaction';
-import type {MutationCallback, QueryCallback } from 'RelayNetworkLayer';
+import type {MutationCallback, QueryCallback} from 'RelayNetworkLayer';
 import type RelayQueryTracker from 'RelayQueryTracker';
-import type {TaskScheduler } from 'RelayTaskQueue';
+import type {TaskScheduler} from 'RelayTaskQueue';
 import type {
   Abortable,
-    CacheManager,
-    ChangeSubscription,
-    NetworkLayer,
-    Observable,
-    RelayMutationConfig,
-    RelayMutationTransactionCommitCallbacks,
-    ReadyStateChangeCallback,
-    StoreReaderData,
-    StoreReaderOptions,
-    Variables,
+  CacheManager,
+  ChangeSubscription,
+  NetworkLayer,
+  Observable,
+  RelayMutationConfig,
+  RelayMutationTransactionCommitCallbacks,
+  ReadyStateChangeCallback,
+  StoreReaderData,
+  StoreReaderOptions,
+  Variables,
 } from 'RelayTypes';
 
 export type FragmentResolver = {
@@ -70,7 +70,7 @@ export type FragmentResolver = {
   resolve(
     fragment: RelayQuery.Fragment,
     dataIDs: DataID | Array<DataID>
-  ): ?(StoreReaderData | Array <?StoreReaderData >),
+  ): ?(StoreReaderData | Array<?StoreReaderData>),
 };
 
 export type RelayEnvironmentInterface = Environment & {
@@ -126,37 +126,28 @@ export type LegacyRelayContext = {
 class RelayEnvironment {
   unstable_internal: RelayCore;
 
-  applyMutation(
- //applyMutation input
-    {
-      configs,
-      operation,
-      optimisticResponse,
-      variables,
-    }: {
-        configs: Array<RelayMutationConfig>,
-        operation: ConcreteOperationDefinition,
-        optimisticResponse: Object,
-        variables: Variables,
-      }
-      
-      ): Disposable  //applyMutation output type is Disposable
- //applyMutation body
-    {
-
+  applyMutation({
+    configs,
+    operation,
+    optimisticResponse,
+    variables,
+  }: {
+    configs: Array<RelayMutationConfig>,
+    operation: ConcreteOperationDefinition,
+    optimisticResponse: Object,
+    variables: Variables,
+  }): Disposable {
     const mutationTransaction = new RelayGraphQLMutation(
       operation.node,
       RelayVariables.getOperationVariables(operation, variables),
       null,
       this
     );
-
     mutationTransaction.applyOptimistic(
       operation.node,
       optimisticResponse,
       configs,
     );
-
     let disposed = false;
     return {
       dispose() {
@@ -272,7 +263,7 @@ class RelayEnvironment {
 
   retain(selector: Selector): Disposable {
     return {
-      dispose() { },
+      dispose() {},
     };
   }
 
@@ -283,12 +274,12 @@ class RelayEnvironment {
     onNext,
     operation,
   }: {
-      cacheConfig?: ?CacheConfig,
-      onCompleted?: ?() => void,
-      onError?: ?(error: Error) => void,
-      onNext?: ?(selector: Selector) => void,
-      operation: OperationSelector,
-    }): Disposable {
+    cacheConfig?: ?CacheConfig,
+    onCompleted?: ?() => void,
+    onError?: ?(error: Error) => void,
+    onNext?: ?(selector: Selector) => void,
+    operation: OperationSelector,
+  }): Disposable {
     let isDisposed = false;
     const dispose = () => {
       isDisposed = true;
@@ -319,7 +310,7 @@ class RelayEnvironment {
     this._storeData.getTaskQueue().enqueue(() => {
       this._storeData.getNetworkLayer().sendQueries([request]);
     });
-    return { dispose };
+    return {dispose};
   }
 
   sendQuerySubscription(config: {
@@ -332,21 +323,14 @@ class RelayEnvironment {
     return this.sendQuery(config);
   }
 
-
-
-
-/******************************  public area ************************************** */
   applyUpdate: (
     mutation: RelayMutation<any>,
     callbacks?: RelayMutationTransactionCommitCallbacks
   ) => RelayMutationTransaction;
-
-
   commitUpdate: (
     mutation: RelayMutation<any>,
     callbacks?: RelayMutationTransactionCommitCallbacks
   ) => RelayMutationTransaction;
-
   _storeData: RelayStoreData;
 
   constructor(storeData?: RelayStoreData) {
@@ -358,10 +342,12 @@ class RelayEnvironment {
     this.commitUpdate = this.commitUpdate.bind(this);
     this.unstable_internal = RelayLegacyCore;
   }
-/************************************************************************************* */
 
+  /**
+   * @internal
+   */
   getStoreData(): RelayStoreData {
-    return this._storeData;  // bchen
+    return this._storeData;
   }
 
   /**
@@ -400,7 +386,7 @@ class RelayEnvironment {
     this._storeData.injectCacheManager(cacheManager);
   }
 
-  /** 重要!
+  /**
    * Primes the store by sending requests for any missing data that would be
    * required to satisfy the supplied set of queries.
    */
@@ -458,27 +444,27 @@ class RelayEnvironment {
     const queuedStore = this._storeData.getQueuedStore();
     const storageKey = root.getStorageKey();
     const results = [];
-    forEachRootCallArg(root, ({ identifyingArgKey }) => {
-  let data;
-  const dataID = queuedStore.getDataID(storageKey, identifyingArgKey);
-  if (dataID != null) {
-    data = this.read(root, dataID, options);
-  }
-  results.push(data);
-});
-return results;
+    forEachRootCallArg(root, ({identifyingArgKey}) => {
+      let data;
+      const dataID = queuedStore.getDataID(storageKey, identifyingArgKey);
+      if (dataID != null) {
+        data = this.read(root, dataID, options);
+      }
+      results.push(data);
+    });
+    return results;
   }
 
-/**
- * Reads and subscribes to query data anchored at the supplied data ID. The
- * returned observable emits updates as the data changes over time.
- */
-observe(
-  fragment: RelayQuery.Fragment,
-  dataID: DataID
-): Observable <?StoreReaderData > {
-  return new RelayQueryResultObservable(this._storeData, fragment, dataID);
-}
+  /**
+   * Reads and subscribes to query data anchored at the supplied data ID. The
+   * returned observable emits updates as the data changes over time.
+   */
+  observe(
+    fragment: RelayQuery.Fragment,
+    dataID: DataID
+  ): Observable<?StoreReaderData> {
+    return new RelayQueryResultObservable(this._storeData, fragment, dataID);
+  }
 
   /**
    * @internal
@@ -491,65 +477,65 @@ observe(
     fragment: RelayQuery.Fragment,
     onNext: () => void
   ): FragmentResolver {
-  return new GraphQLStoreQueryResolver(
-    this._storeData,
-    fragment,
-    onNext
-  );
-}
-
-/**
- * Adds an update to the store without committing it. The returned
- * RelayMutationTransaction can be committed or rolled back at a later time.
- */
-applyUpdate(
-  mutation: RelayMutation < any >,
-  callbacks ?: RelayMutationTransactionCommitCallbacks
-): RelayMutationTransaction {
-  mutation.bindEnvironment(this);
-  return this._storeData.getMutationQueue()
-    .createTransaction(mutation, callbacks)
-    .applyOptimistic();
-}
-
-
-/**
- * Adds an update to the store and commits it immediately. Returns
- * the RelayMutationTransaction.
- */
-commitUpdate(
-  mutation: RelayMutation < any >,
-  callbacks ?: RelayMutationTransactionCommitCallbacks
-): RelayMutationTransaction {
-  const transaction = this.applyUpdate(mutation, callbacks);
-  // The idea here is to defer the call to `commit()` to give the optimistic
-  // mutation time to flush out to the UI before starting the commit work.
-  const preCommitStatus = transaction.getStatus();
-  setTimeout(() => {
-    if (transaction.getStatus() !== preCommitStatus) {
-      return;
-    }
-    transaction.commit();
-  });
-  return transaction;
-}
-
-/**
- * @deprecated
- *
- * Method renamed to commitUpdate
- */
-update(
-  mutation: RelayMutation < any >,
-  callbacks ?: RelayMutationTransactionCommitCallbacks
-): void {
-  warning(
-      false,
-  '`Relay.Store.update` is deprecated. Please use' +
-  ' `Relay.Store.commitUpdate` or `Relay.Store.applyUpdate` instead.'
+    return new GraphQLStoreQueryResolver(
+      this._storeData,
+      fragment,
+      onNext
     );
-  this.commitUpdate(mutation, callbacks);
-}
+  }
+
+  /**
+   * Adds an update to the store without committing it. The returned
+   * RelayMutationTransaction can be committed or rolled back at a later time.
+   */
+  applyUpdate(
+    mutation: RelayMutation<any>,
+    callbacks?: RelayMutationTransactionCommitCallbacks
+  ): RelayMutationTransaction {
+    mutation.bindEnvironment(this);
+    return this._storeData.getMutationQueue()
+      .createTransaction(mutation, callbacks)
+      .applyOptimistic();
+  }
+
+
+  /**
+   * Adds an update to the store and commits it immediately. Returns
+   * the RelayMutationTransaction.
+   */
+  commitUpdate(
+    mutation: RelayMutation<any>,
+    callbacks?: RelayMutationTransactionCommitCallbacks
+  ): RelayMutationTransaction {
+    const transaction = this.applyUpdate(mutation, callbacks);
+    // The idea here is to defer the call to `commit()` to give the optimistic
+    // mutation time to flush out to the UI before starting the commit work.
+    const preCommitStatus = transaction.getStatus();
+    setTimeout(() => {
+      if (transaction.getStatus() !== preCommitStatus) {
+        return;
+      }
+      transaction.commit();
+    });
+    return transaction;
+  }
+
+  /**
+   * @deprecated
+   *
+   * Method renamed to commitUpdate
+   */
+  update(
+    mutation: RelayMutation<any>,
+    callbacks?: RelayMutationTransactionCommitCallbacks
+  ): void {
+    warning(
+      false,
+      '`Relay.Store.update` is deprecated. Please use' +
+      ' `Relay.Store.commitUpdate` or `Relay.Store.applyUpdate` instead.'
+    );
+    this.commitUpdate(mutation, callbacks);
+  }
 }
 
 /**

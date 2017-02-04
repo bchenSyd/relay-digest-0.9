@@ -194,11 +194,12 @@ function runQueries(
     if (fetchMode === RelayFetchMode.CLIENT) {
       forEachObject(querySet, query => {
         if (query) {
-          queries.push(...diffRelayQuery(   //some previousely fetched data is missing. we need to refetch
+          var diffedQuery = {...diffRelayQuery(   //some previousely fetched data is missing. we need to refetch
             query,
             storeData.getRecordStore(),
             storeData.getQueryTracker()
-          ));
+        )}
+          queries.push(diffedQuery);
         }
       });
     } else {
@@ -209,13 +210,16 @@ function runQueries(
       });
     }
 
+//************************************************************************************** */
+//************************************************************************************** */
     const flattenedQueries = splitAndFlattenQueries(storeData, queries);
-
+// tell everyone that $ajax.send is about to start!!
     const networkEvent = [];
     if (flattenedQueries.length) {
-      networkEvent.push({type: 'NETWORK_QUERY_START'});  //$ajax.send registered here!
+      networkEvent.push({type: 'NETWORK_QUERY_START'});  
     }
 
+//call $ajax.send() . the main `promise-then chain`
     flattenedQueries.forEach(query => {
       const pendingFetch = storeData.getPendingQueryTracker().add(
         {query, fetchMode, forceIndex, storeData}
@@ -225,12 +229,16 @@ function runQueries(
       if (!query.isDeferred()) {
         remainingRequiredFetchMap[queryID] = pendingFetch;
       }
+
+      //this is ajax main promise-then chain
+      //$ajax.send().then( response=>onResolved, error=>onRjected)
       pendingFetch.getResolvedPromise().then(
-        onResolved.bind(null, pendingFetch),
-        onRejected.bind(null, pendingFetch)
+        onResolved.bind(null, pendingFetch), `NETWORK_QUERY_RECEIVED_ALL`
+        onRejected.bind(null, pendingFetch)  `NETWORK_QUERY_ERROR`
       );
     });
-
+//************************************************************************************** */
+//************************************************************************************** */
     if (!hasItems(remainingFetchMap)) {
       readyState.update({
         done: true,

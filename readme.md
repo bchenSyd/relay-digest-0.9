@@ -1,5 +1,20 @@
-# relay architecture
-Greg Hurrell 's  Relay Deep Dive
+# `Relay Deep Dive` by Greg Hurrell
+schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST (Abstract Syntax Tree)
+Diff with Store data (available at client)  --> Split ( RelayQueryTransform, traverse the query ) -> print (graphQL server doesn't speak AST)
+                       ||
+                       ||
+                       \/
+                 GRAPHQL SERVER
+                       ||
+                       ||
+                       \/
+receive query payload:
+Write payload (traverse the query with response data and store data into store. RelayQueryWriter, _writeScalar, write into normalized store)
+Notify subscribers (i.e. mutation case: RelayContainer's _handleFragmentDataUpdate)
+Read query data (another traversal , readRelayQueryData, _readScalar, better known as fragmentResolvers.resolve)
+Render
+
+
 `query = {viewer{ store{id, name}}}` ==> babel-relay-plugin ==> AST ==> DIFF/SPLIT/DEFER ==> PRINT => server request
                         http traffic
 flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:save  respone data
@@ -19,44 +34,72 @@ flatterned record store <======= AST to build serializationKey, which is the dat
 >once serialization is done, we notify RelayContainers that data is ready, they then call _getQueryData which is another traversal using query AST
 >(readRelayQueryData.js)
 
+# How is RelayQuery sent to server?
+  RelayContainer build the raw querySet => pass the relayEnvironment.primeCache => graphqlQueryRunner.runQueries{
+
+```
+graphqlQueryRunner.runQueries{
+
+      storeData.getTaskQueue().enqueue(function () {
+      var queries = [];
+      if (fetchMode === require('./RelayFetchMode').CLIENT) {
+        require('fbjs/lib/forEachObject')(querySet, function (query) {
+          if (query) {
+            var diffedQuery = require('./diffRelayQuery')(query, storeData.getRecordStore(), storeData.getQueryTracker())
+            queries.push.apply(queries, diffedQuery);
+          }
+        });
 
 
-# How is RelayQuery sent to server?   
-  RelayContainer build the raw querySet => pass the relayEnvironment.primeCache -> graphqlQueryRunner.runQueries{
-              storeData.getTaskQueue().enqueue(function () {
-              var queries = [];
-              if (fetchMode === require('./RelayFetchMode').CLIENT) {
-                require('fbjs/lib/forEachObject')(querySet, function (query) {
-                  if (query) {
-                    var diffedQuery = require('./diffRelayQuery')(query, storeData.getRecordStore(), storeData.getQueryTracker())
-                    queries.push.apply(queries, diffedQuery);
-                  }
-                });
+          const flattenedQueries = splitAndFlattenQueries(storeData, queries);
+          // tell everyone that $ajax.send is about to start!!
+              const networkEvent = [];
+              if (flattenedQueries.length) {
+                networkEvent.push({type: 'NETWORK_QUERY_START'});  
+              }
 
-                    var flattenedQueries = splitAndFlattenQueries(storeData, queries);
-
-                  if (flattenedQueries.length) {
-                         networkEvent.push({ type: 'NETWORK_QUERY_START' });
-                  }   
+          //call $ajax.send() . the main `promise-then chain`
+              flattenedQueries.forEach(query => {
+                const pendingFetch = storeData.getPendingQueryTracker().add(
+                  {query, fetchMode, forceIndex, storeData}
+                );
+                const queryID = query.getID();
+                remainingFetchMap[queryID] = pendingFetch;
+                if (!query.isDeferred()) {
+                  remainingRequiredFetchMap[queryID] = pendingFetch;
+                }
+          //************************************************************************************** */
+          //************************************************************************************** */
+                //this is ajax main promise-then chain
+                //$ajax.send().then( response=>onResolved, error=>onRjected)
+                pendingFetch.getResolvedPromise().then(
+                  onResolved.bind(null, pendingFetch), `NETWORK_QUERY_RECEIVED_ALL`
+                  onRejected.bind(null, pendingFetch)  `NETWORK_QUERY_ERROR`
+                );
+          //************************************************************************************** */
+          //************************************************************************************** */                
+              });
+         
+          }
+      }
 }
+```
 
-# Relay Deep Dive by Greg Hurrell
-schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST (Abstract Syntax Tree)
-Diff with Store data (available at client)  --> Split ( RelayQueryTransform, traverse the query ) -> print (graphQL server doesn't speak AST)
-                       ||
-                       ||
-                       \/
-                 GRAPHQL SERVER
-                       ||
-                       ||
-                       \/
-receive query payload:
-Write payload (traverse the query with response data and store data into store. RelayQueryWriter, _writeScalar, write into normalized store)
-Notify subscribers (i.e. mutation case: RelayContainer's _handleFragmentDataUpdate)
-Read query data (another traversal , readRelayQueryData, _readScalar, better known as fragmentResolvers.resolve)
-Render
+# store/RelayEnvironment  is pivotal
+   `RelayEnvironment` is the public API for Relay core
 
-
+`RelayEnvironment`
+  + RelayStoreData
+        +  _queuedStore: RelayRecordStore;
+        +  _recordStore: RelayRecordStore;
+        +  _cachedStore: RelayRecordStore;
+        +  _queryTracker
+        +  _networkLayer
+  + ApplyUpdate
+  + CommitUpdate
+  + primeCache
+  + forceFetch
+  + mutation stuff
 class RelayStoreData {
 //********************************************************************/
   //I have 3 record store; one for records, one for queued records (optimistic updates), and one for cached record

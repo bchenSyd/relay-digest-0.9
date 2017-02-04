@@ -21,6 +21,7 @@ import type {DataID} from 'RelayInternalTypes';
 
 const TYPE = '__type__';
 
+//one dataID has an array of trackedQueryNode
 class RelayQueryTracker {
   _trackedNodesByID: {[key: string]: {
     isMerged: boolean,

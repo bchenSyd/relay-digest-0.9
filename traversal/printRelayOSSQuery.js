@@ -85,7 +85,7 @@ function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
     //RelayNetworkLayer.js::fetchRelayQuery ==> RelayNetworkLayer::sendQueries==> RelayDefaultNetworkLayer::sendQueries
     // ==> RelayDefaultNetworkLayer::_sendQuery =>  RelayQueryRequest::getQueryString ==>
     //printedQuery = require('./printRelayOSSQuery')(this._query)
-    text: queryString,  //$ajax.send('graphql query string', variables)
+    text: queryString,
     variables,
   };
 }
