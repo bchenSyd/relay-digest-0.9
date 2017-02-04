@@ -1,4 +1,6 @@
 # `Relay Deep Dive` by Greg Hurrell
+## process
+```
 schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST (Abstract Syntax Tree)
 Diff with Store data (available at client)  --> Split ( RelayQueryTransform, traverse the query ) -> print (graphQL server doesn't speak AST)
                        ||
@@ -13,18 +15,21 @@ Write payload (traverse the query with response data and store data into store. 
 Notify subscribers (i.e. mutation case: RelayContainer's _handleFragmentDataUpdate)
 Read query data (another traversal , readRelayQueryData, _readScalar, better known as fragmentResolvers.resolve)
 Render
+```
 
+## QueryNode/AST is the thread that piece everything together
+>* `query = {viewer{ store{id, name}}}` ==> babel-relay-plugin ==> AST ==> DIFF/SPLIT/DEFER ==> PRINT => server request
+>*                         http traffic
+>* flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:save  respone data
+>* flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:read  relay container
 
-`query = {viewer{ store{id, name}}}` ==> babel-relay-plugin ==> AST ==> DIFF/SPLIT/DEFER ==> PRINT => server request
-                        http traffic
-flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:save  respone data
-flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:read  relay container
-
- RelayQueryVisitor (read version, base Class)
+## Traversal : RelayQueryVisitor (read version, base Class)
+```
     + RelayQueryTransform (read-write version, for SPLITTING, Deferring..etc. transform graphql Query and send to server)
     + RelayQueryWrite : read version; utilize AST to pluck responsedata (POJO) and save into _recordStore
     + readRelayQueryData: read version; traverse(node, nextState)  use nextState to hold returned data (this is the props for relay container); 
                           for RelayContainer to get response data from store using AST as key
+```
 
 >AST is the most important thing in relay; it participate in the entire process of relay
 >you first write query in graphql , which is string; then babel-relay plug in parse that into AST
