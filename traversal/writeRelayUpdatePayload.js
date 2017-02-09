@@ -175,7 +175,7 @@ function deleteRecord(
  * updating each top-level field in the data according the fetched
  * fields/fragments.
  */
-function handleMerge(
+function handleMerge( //keyworkd: mergestate  , merge mutation output into store  
   writer: RelayQueryWriter,
   payload: PayloadObject,
   operation: RelayQuery.Operation
