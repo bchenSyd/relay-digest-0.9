@@ -1332,6 +1332,7 @@ class RelayQueryField extends RelayQueryNode {
     return shallowHash;
   }
 
+//************************************************************************************ */
   /**
    * The name which Relay internals can use to reference this field, without
    * collisions.
@@ -1354,7 +1355,7 @@ class RelayQueryField extends RelayQueryNode {
     }
     return storageKey;
   }
-
+//************************************************************************************ */
   /**
    * The name by which this field's results should be made available to the
    * application.

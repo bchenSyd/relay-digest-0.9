@@ -127,7 +127,77 @@ class RelayStoreData {
   _queryRunner: GraphQLQueryRunner;
 //********************************************************************/
 ```
+# __storagekey__
+Relay use __storagekey__ to determine whether it has fetched the data before or not
+`__storageKey == this.getSchemaName() + this.getCallsWithValues().filter(para=>_isCoreArg(para))`
 
+
+Given a query 
+```
+fragment on Store{
+  Person(dummy:'some-data-from-parent',status:'passed'){
+    id,
+    name,
+    age
+  }
+  
+  `
+```
+`diffRelayQuery` will workout `__storageKey__` nodes for the query AST and look up store for that  `__storagekey__`
+For the first time Relay can't find the record, so `diffRelayQuery` returns diffNode and that diffNode gets sent to server
+after server responded with data, Relay update store with 
+```
+_records{
+
+  Person:2 {   
+    __dataID__:'Person:2',
+    __typename:'Person'
+    age:32,
+    id:'Person:2',
+    status:'passed'
+  }
+
+  Store: 1 {  //this is actually a merged result of query #1 and query #
+    __dataID__:'Store:1', //used to build node query
+    __typename:'Store',
+    counter:10, // from query#1
+    country_code:'cn',   //from query#2
+    id:'Store:1',
+    Person{dummy:'some-data-from-parent',status:'passed'}{      // !! this is the __storagekey__ we are talking about !!
+        __dataID__:'Person2"
+    }
+
+  }
+}
+```
+
+E:\relay-digest\query\RelayQuery.js, line 1335
+```
+//************************************************************************************ */
+  /**
+   * The name which Relay internals can use to reference this field, without
+   * collisions.
+   *
+   * Given the GraphQL
+   *   `field(first: 10, foo: "bar", baz: "bat")`, or
+   *   `field(baz: "bat", foo: "bar", first: 10)`
+   *
+   * ...the following storage key will be produced:
+   *   `'field{bar:"bat",foo:"bar"}'`
+   */
+  getStorageKey(): string {
+    let storageKey = this.__storageKey__;
+    if (!storageKey) {
+      this.__storageKey__ = storageKey =
+        this.getSchemaName() +
+        serializeCalls(
+          this.getCallsWithValues().filter(call => this._isCoreArg(call))
+        );
+    }
+    return storageKey;
+  }
+//************************************************************************************ */
+```
 
 # digest
 ## why relay?

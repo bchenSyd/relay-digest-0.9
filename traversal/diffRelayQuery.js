@@ -225,8 +225,9 @@ class RelayDiffQueryBuilder {
   }
 
   /**
-   * Diffs the field conditionally based on the `scope` from the nearest
-   * ancestor field.
+        node: is the query currently being diffed
+        path: ??
+        scope: 
    */
   visitField(
     node: RelayQuery.Field,
@@ -429,8 +430,14 @@ class RelayDiffQueryBuilder {
     path: QueryPath,
     dataID: DataID,
   ): ?DiffOutput {
-    const nextDataID =
-      this._store.getLinkedRecordID(dataID, field.getStorageKey());
+
+//***************************************************************************************** */
+// the idea is that, given a query, take all its fields (scalar  or Link (for fragment) )
+// query AST has __storagekey__ (starting from Root,all the way down to scalar fields ) which stores the expected data hierarchy, !! filters used to get the data
+// we are extracting __storagekey__ and tries to find them from record store
+    const nextDataID = this._store.getLinkedRecordID(dataID, field.getStorageKey()); //dataID is rootQuery_storageKey + child_storageKey
+    const nextScope =  makeScope(nextDataID)
+//***************************************************************************************** */
     if (nextDataID === undefined) {
       return {
         diffNode: field,
@@ -447,7 +454,7 @@ class RelayDiffQueryBuilder {
     return this.traverse(
       field,
       RelayQueryPath.getPath(path, field, nextDataID),
-      makeScope(nextDataID)
+      nextScope
     );
   }
 
