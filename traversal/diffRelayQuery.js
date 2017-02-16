@@ -391,7 +391,11 @@ class RelayDiffQueryBuilder {
       trackedNode &&
       !(trackedNode instanceof RelayQuery.Fragment)
     ) {
+
+//************************************************************************************ */
+    // not called here. I don't know what this line is for
       this._queryTracker.trackNodeForID(trackedNode, scope.dataID);
+//************************************************************************************ */
     }
 
     return {
@@ -432,6 +436,7 @@ class RelayDiffQueryBuilder {
   ): ?DiffOutput {
 
 //***************************************************************************************** */
+// rembmer: dataID is always , always __storagekey__
 // the idea is that, given a query, take all its fields (scalar  or Link (for fragment) )
 // query AST has __storagekey__ (starting from Root,all the way down to scalar fields ) which stores the expected data hierarchy, !! filters used to get the data
 // we are extracting __storagekey__ and tries to find them from record store

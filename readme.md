@@ -127,8 +127,14 @@ class RelayStoreData {
   _queryRunner: GraphQLQueryRunner;
 //********************************************************************/
 ```
-# __storagekey__
-Relay use __storagekey__ to determine whether it has fetched the data before or not
+# recordID,  __storagekey__  and  trackedQuery
+
+* recordID is the id field of an object, it's the unique identifier for a DATA
+* __storagekey__ is the normalized relayQueryAST, it's the unique identifier for a query AST node (you can only use __storagekey__ to compare query. it's like the Query AST 's harshed value)
+* trackedQuery is a map of {recordIDs: [AST1, AST2, AST3]. it's used to calculate `fields refetch` after a mutation
+
+
+>Relay use __storagekey__ to determine whether it has fetched the data before or not
 `__storageKey == this.getSchemaName() + this.getCallsWithValues().filter(para=>_isCoreArg(para))`
 
 
@@ -171,8 +177,28 @@ _records{
 }
 ```
 
-E:\relay-digest\query\RelayQuery.js, line 1335
+`tracked query` is created when Relay has got the query payload and start writing data into store. I think its used for `mutaton`.
+ 1. keep a record of all raw ASTs that bring in this <Object> record. so that we know what `fields` has been queried on this `object field` 
+ 2. intersect the fat query of a mutation, to workout what `fields` need to `refetch`
+
 ```
+RelayQueryTracker             trackNodeForID
+RelayQueryWriter              createRecordIfMissing
+RelayQueryWriter              visitRoot
+RelayQueryWriter              visit
+RelayQueryWriter              writePayload
+WriteRelayQueryPayload        WriteRelayQueryPayload ===> var dataID = void 0; dataID = result[ID] //use the id field defined in Graphql Node interface
+RelayStoreData                handleQueryPayload
+RelayTaskQueue                enqueue
+RelayPendingQueryTracker.js   _handleQuerySuccess
+
+```
+
+
+
+
+```
+source: E:\relay-digest\query\RelayQuery.js, line 1335
 //************************************************************************************ */
   /**
    * The name which Relay internals can use to reference this field, without
