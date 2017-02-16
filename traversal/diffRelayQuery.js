@@ -285,7 +285,7 @@ class RelayDiffQueryBuilder {
   }
 
   /**
-   * Visit all the children of the given `node` and merge their results.
+   * Deep first tree traverse .   Visit all the children of the given `node` and merge their results.
    */
   traverse(
     node: RelayQuery.Node,
@@ -298,10 +298,14 @@ class RelayDiffQueryBuilder {
     let trackedChildren;
     let hasDiffField = false;
     let hasTrackedField = false;
-
+//a deep-first-traverse happens here!
     node.getChildren().forEach(child => {
       if (child instanceof RelayQuery.Field) {
+//recursion!!
+/****************************************************************** */
+        //visitField -> diffScalar/diffLink/diffPluralLink..etc -> this.traverse
         const diffOutput = this.visitField(child, path, scope);
+/****************************************************************** */
         const diffChild = diffOutput ? diffOutput.diffNode : null;
         const trackedChild = diffOutput && this._queryTracker ?
           diffOutput.trackedNode :
@@ -378,7 +382,10 @@ class RelayDiffQueryBuilder {
 
     // Only return diff/tracked node if there are non-generated fields
     if (diffChildren && hasDiffField) {
+//************************************************************************** */
+//reconcile/merge , combine all diff children + myslef => return to parent
       diffNode = node.clone(diffChildren);
+//************************************************************************** */
     }
     if (trackedChildren && hasTrackedField) {
       trackedNode = node.clone(trackedChildren);
@@ -398,6 +405,7 @@ class RelayDiffQueryBuilder {
 //************************************************************************************ */
     }
 
+//finish this iteration; but note we are in a deep-first-tree-traverse!
     return {
       diffNode,
       trackedNode,
