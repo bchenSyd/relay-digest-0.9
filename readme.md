@@ -181,9 +181,13 @@ _records{
  1. keep a record of all raw ASTs that bring in this <Object> record. so that we know what `fields` has been queried on this `object field` 
  2. intersect the fat query of a mutation, to workout what `fields` need to `refetch`
 
+# the save response data into store traverse
 ```
 RelayQueryTracker             trackNodeForID
-RelayQueryWriter              createRecordIfMissing
+//D:\__work\relay-digest\store\RelayQueryWriter.js line:659
+RelayQueryWriter              1. createRecordIfMissing, note down new __dataID__ as nextLinkID 
+                              2. Store:1.person{status:"in_progress"} = Person:2  
+                              recordId.storageKey = nextLinkedId (putLinkedRecordID(recordID, storageKey, nextLinkedID) )
 RelayQueryWriter              visitRoot
 RelayQueryWriter              visit
 RelayQueryWriter              writePayload
@@ -225,30 +229,9 @@ source: E:\relay-digest\query\RelayQuery.js, line 1335
 //************************************************************************************ */
 ```
 
-# digest
-## why relay?
-Note two important benefits in the GraphQL version:
-
-All data is fetched in a single round trip.
-The client and server are decoupled: the client specifies the data needed instead of relying on the server endpoint to return the correct data.
-
-## queued records, records, and cached records?
-
-Cache Consistency 
-With GraphQL it is very common for the results of multiple queries to overlap. However, our response cache from the previous section doesn't account for this overlap — it caches based on distinct queries. For example, if we issue a query to fetch stories:
-
-query { stories { id, text, likeCount } }
-and then later refetch one of the stories whose likeCount has since been incremented:
-
-query { story(id: "123") { id, text, likeCount } }
-We'll now see different likeCounts depending on how the story is accessed. A view that uses the first query will see an outdated count, while a view using the second query will see the updated count.
-
-## View and Model
-Achieving View Consistency 
-The approach that Relay takes is to maintain a mapping from each UI view to the set of IDs it references. In this case, the story view would subscribe to updates on the story (1), the author (2), and the comments (3 and any others). When writing data into the cache, Relay tracks which IDs are affected and notifies only the views that are subscribed to those IDs. The affected views re-render, and unaffected views opt-out of re-rendering for better performance (Relay provides a safe but effective default shouldComponentUpdate). Without this strategy, every view would re-render for even the tiniest change.
 
 
-## Think in Relay
+# Think in Relay
 
 In our experience, the overwhelming majority of products want one specific behavior: fetch all the data for a view hierarchy while displaying a loading indicator, and then render the entire view once the data is ready.
 

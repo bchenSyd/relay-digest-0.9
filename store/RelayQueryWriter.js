@@ -651,15 +651,20 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
       generateClientID()
     );
 
-    // $FlowFixMe(>=0.33.0)
+  
     const path = RelayQueryPath.getPath(state.path, field, nextLinkedID);
-    // $FlowFixMe(>=0.33.0)
+  
+
+
+//********************************************************************************** */
+    //1. first put the fieldData into store , and assign a __dataID__ as nextLinkedID
     this.createRecordIfMissing(field, nextLinkedID, path, fieldData);
-    // always update the store to ensure the value is present in the appropriate
-    // data sink (record/queuedRecords), but only record an update if the value
-    // changed.
-    // $FlowFixMe(>=0.33.0)
+    //2. then put the current recordID.storageKey link to __dataID__. e.g. 'Store:1'.'person{status:"in_progress"}' = 'Person:2'
     this._writer.putLinkedRecordID(recordID, storageKey, nextLinkedID);
+//********************************************************************************** */
+
+
+
     if (prevLinkedID !== nextLinkedID) {
       this.recordUpdate(recordID);
     }
