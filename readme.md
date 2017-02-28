@@ -63,7 +63,7 @@ graphqlQueryRunner.runQueries{
                 networkEvent.push({type: 'NETWORK_QUERY_START'});  
               }
 
-          //call $ajax.send() . the main `promise-then chain`
+          //call $ajax.send() . the main `promise-then chain` /loop
               flattenedQueries.forEach(query => {
                 const pendingFetch = storeData.getPendingQueryTracker().add(
                   {query, fetchMode, forceIndex, storeData}
@@ -78,8 +78,8 @@ graphqlQueryRunner.runQueries{
                 //this is ajax main promise-then chain
                 //$ajax.send().then( response=>onResolved, error=>onRjected)
                 pendingFetch.getResolvedPromise().then(
-                  onResolved.bind(null, pendingFetch), `NETWORK_QUERY_RECEIVED_ALL`
-                  onRejected.bind(null, pendingFetch)  `NETWORK_QUERY_ERROR`
+                  onResolved.bind(null, pendingFetch),  //see graphqlQueryRunner, line 144 (same file)  `NETWORK_QUERY_RECEIVED_ALL`
+                  onRejected.bind(null, pendingFetch)   // same file, line 177,                         `NETWORK_QUERY_ERROR`
                 );
           //************************************************************************************** */
           //************************************************************************************** */                
@@ -127,10 +127,17 @@ class RelayStoreData {
   _queryRunner: GraphQLQueryRunner;
 //********************************************************************/
 ```
+# when debugging `RelayContainer`, how do I know which wrapped react component I'm working on?
+`Relaycontainer` has `  var componentName = getComponentName(Component);` in line 104 (compiled code line 54) which store the wrapped component. However, that's usally not availble due to optimization
+the practical approach of figuring out the wrapped react component is via relay fragment --- we can use fragment as the unique identifier of react component
+just check  `this._fragmentPointers-> ... -> fragment -> __concreteNode__ -> name`. It normally contains data like "MobileNavigationBar_ViewerRelayQL" which tells you which component it's wrapping
+
+
 # recordID,  __storagekey__  and  trackedQuery
 
-* recordID is the id field of an object, it's the unique identifier for an object
-* __storagekey__ is the record store path. e.g.
+## recordID is the id field of an object, it's the unique identifier for an object
+
+## __storagekey__ is the record store path. e.g.
 ```
 Relay.Query`query{
    viewer{
@@ -142,13 +149,16 @@ Relay.Query`query{
   }`
 ```
 will result into 
+-------------------------------------------------------------------------------------------------------------------
 viewer                              __dataID__ : 'client:-21347635687'
    events{id:'0:91430'}                   __dataID__: 'event:91430'
           meeting                             __dataID__: 'meeting:aus_t_28_02_2017'
                id                                 'meeting:aus_t_28_02_2017'
                name                               'bendigo'
+-------------------------------------------------------------------------------------------------------------------
 `Relay` uses __storageKey__ to diff query against recordStore and only fetch data that doesn't exist on recordStore
-* trackedQuery is a map of {recordIDs: [AST1, AST2, AST3]. it's used to calculate `fields refetch` after a mutation
+
+## trackedQuery is a map of {recordIDs: [AST1, AST2, AST3]. it's used to calculate `fields refetch` after a mutation
 
 
 >Relay use __storagekey__ to determine whether it has fetched the data before or not
