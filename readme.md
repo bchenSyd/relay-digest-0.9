@@ -129,8 +129,25 @@ class RelayStoreData {
 ```
 # recordID,  __storagekey__  and  trackedQuery
 
-* recordID is the id field of an object, it's the unique identifier for a DATA
-* __storagekey__ is the normalized relayQueryAST, it's the unique identifier for a query AST node (you can only use __storagekey__ to compare query. it's like the Query AST 's harshed value)
+* recordID is the id field of an object, it's the unique identifier for an object
+* __storagekey__ is the record store path. e.g.
+```
+Relay.Query`query{
+   viewer{
+      events(id:$id) {
+         meeting{
+           name,
+           id
+         }}
+  }`
+```
+will result into 
+viewer                              __dataID__ : 'client:-21347635687'
+   events{id:'0:91430'}                   __dataID__: 'event:91430'
+          meeting                             __dataID__: 'meeting:aus_t_28_02_2017'
+               id                                 'meeting:aus_t_28_02_2017'
+               name                               'bendigo'
+`Relay` uses __storageKey__ to diff query against recordStore and only fetch data that doesn't exist on recordStore
 * trackedQuery is a map of {recordIDs: [AST1, AST2, AST3]. it's used to calculate `fields refetch` after a mutation
 
 
