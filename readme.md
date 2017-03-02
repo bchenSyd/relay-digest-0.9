@@ -291,7 +291,7 @@ $ for f in */*/*.ts; do mv "$f" "${f%.ts}.js";  done
 ```
 
 ## component `SearchContainer` was rendered with variables that differ from the variables used to fetch fragment `viewer`. The fragment was fetched with variables `{"status":"passed"}`, but rendered with variables `{"status":"any"}
-
+query -> field ->fragment->field->fragment->filed.....
 ```
 throw 'RelayContainer: component A was rendered with varialbes xx that differ from the variables used to fetch..'
 getfragment + validateFragmentProp  //getfragment then calls `buildContainerFragment` to build a fragment AST
@@ -299,9 +299,11 @@ _updateFragmentPointers
 _initialize
 ```
 
-what it is saying is that: I've a fragment (with variables#1) , and my parent has passed me a fragment container , e.g. 
+what it is saying is that: I've a fragment (with variables#1) , and my parent has passed me a field( where my fragment is defined on) , e.g. 
 viewer:{ 
   __dataId__:'client:1234',  //the field object fragent is defined on
+  counter:10,   //fileds that my parent has queried; shouldn't pass to me as I didn't ask for it
+  name:'bchen'  //would be nice if we can filter these properties out when passing containing field to child 
   __fragments__: 2::client   //this is what `$childContainer.getFragment('viewer',varialbes)` gets resolved into from Parent container
   }. 
 I'm trying to build up my fragmentPointer so that I can use it to retreive data from store( only I can do that my spec is opaque to my parent).
