@@ -291,7 +291,7 @@ $ for f in */*/*.ts; do mv "$f" "${f%.ts}.js";  done
 ```
 
 ## component `SearchContainer` was rendered with variables that differ from the variables used to fetch fragment `viewer`. The fragment was fetched with variables `{"status":"passed"}`, but rendered with variables `{"status":"any"}
-query -> field ->fragment->field->fragment->filed.....
+query -> field ->fragment->field->fragment->filed.....      __path__ contains the hierachy, see section ## about __path__ below
 ```
 throw 'RelayContainer: component A was rendered with varialbes xx that differ from the variables used to fetch..'
 getfragment + validateFragmentProp  //getfragment then calls `buildContainerFragment` to build a fragment AST
@@ -313,9 +313,6 @@ in case I can't find the fragment from fragment-container (if(!hasFragmentData){
 Here is variables#1 that is about to be used to render (_getQueryData);
 and here is variables#2 which is used to fetch(passed from parent)
 ```
-
-
-
 Once `Relay` gets response from server, it notifies either RelayRenderer(first load) or corresponding RelayContainer that data is ready; RelayRenderer or RelayContainer will then query data from relay store. The 'token' they use to fetch data is their fragmentPointer, i.e. the relay spec (each RelayContainer has a Relay Fragment)
 ```
   RelayContainer.prototype._getQueryData = function _getQueryData(props) 
@@ -345,4 +342,26 @@ RelayContainer.js , source code line:574
                     );
     }
 
+```
+
+## about __path__
+I reckon that   __path__ is used to pass (fragment containing field ) from parent container   to child container
+   __path__ contains the hierachy
+
+```
+client:12919406  //root field
+    __path__: RelayQueryRoot
+        type:'root'
+        __children__:Array[RelqyQueryField|RelayQueryFragment]
+              0:RelayQueryField
+                  __children: array
+                      0:field
+                      1:fragment
+                      2:fragment
+              1:RelayQueryFragment
+                  __children__: array
+                          0: field
+                          1: field
+                              __children: array \ 0:field 1: fragment 2: fragment...
+                          2: fragment
 ```
