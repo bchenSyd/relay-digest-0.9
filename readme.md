@@ -150,11 +150,11 @@ Relay.Query`query{
 ```
 will result into 
 -------------------------------------------------------------------------------------------------------------------
-viewer                              __dataID__ : 'client:-21347635687'
-   events{id:'0:91430'}                   __dataID__: 'event:91430'
-          meeting                             __dataID__: 'meeting:aus_t_28_02_2017'
-               id                                 'meeting:aus_t_28_02_2017'
-               name                               'bendigo'
+viewer                                                       __dataID__ : 'client:-21347635687'
+   events{id:'0:91430'} (this is the stroage key)                  __dataID__: 'event:91430'
+          meeting       (this is the stroage key)                      __dataID__: 'meeting:aus_t_28_02_2017'
+               id       (this is the stroage key)                                 'meeting:aus_t_28_02_2017'
+               name     (this is the stroage key)                                  'bendigo'
 -------------------------------------------------------------------------------------------------------------------
 `Relay` uses __storageKey__ to diff query against recordStore and only fetch data that doesn't exist on recordStore
 
@@ -304,8 +304,13 @@ viewer:{
   __dataId__:'client:1234',  //the field object fragent is defined on
   counter:10,   //fileds that my parent has queried; shouldn't pass to me as I didn't ask for it
   name:'bchen'  //would be nice if we can filter these properties out when passing containing field to child 
-  __fragments__: 2::client   //this is what `$childContainer.getFragment('viewer',varialbes)` gets resolved into from Parent container
-  }. 
+  __fragments__: Object
+      1::client   //this is what `$childContainer1.getFragment('viewer',varialbes)` gets resolved into from Parent container
+      2::client   //this is what `$childContainer2.getFragment('viewer',varialbes)` gets resolved into from Parent container
+      3::client   //this is what `$childContainer2.getFragment('viewer',varialbes)` gets resolved into from Parent container
+  }
+
+
 I'm trying to build up my fragmentPointer so that I can use it to retreive data from store( only I can do that my spec is opaque to my parent).
 After I've built up my fragmentPointer, since i'm not in production, it's always nice to check if my fragment is 'client:1234.2::client' (i.e. do they match?)
 in case I can't find the fragment from fragment-container (if(!hasFragmentData){ throw warning}).
