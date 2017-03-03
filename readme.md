@@ -1,8 +1,8 @@
 # `Relay Deep Dive` by Greg Hurrell
 ## process
 ```
-schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST (Abstract Syntax Tree)
-Diff with Store data (available at client)  --> Split ( RelayQueryTransform, traverse the query ) -> print (graphQL server doesn't speak AST)
+schema.json -> babel-relay-plugin -> Relay.QL`query{ rootQuery}` --> query AST
+Diff with Store data (_diffScalar)  --> Split ( RelayQueryTransform, traverse the query ) -> print (graphQL server doesn't speak AST)
                        ||
                        ||
                        \/
@@ -17,29 +17,22 @@ Read query data (another traversal , readRelayQueryData, _readScalar, better kno
 Render
 ```
 
-## QueryNode/AST is the thread that piece everything together
->* `query = {viewer{ store{id, name}}}` ==> babel-relay-plugin ==> AST ==> DIFF/SPLIT/DEFER ==> PRINT => server request
->*                         http traffic
->* flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:save  respone data
->* flatterned record store <======= AST to build serializationKey, which is the data Covenant  <=========:read  relay container
-
 ## Traversal : RelayQueryVisitor (read version, base Class)
 ```
-    + RelayQueryTransform (read-write version, for SPLITTING, Deferring..etc. transform graphql Query and send to server)
-    + RelayQueryWrite : read version; utilize AST to pluck responsedata (POJO) and save into _recordStore
-    + readRelayQueryData: read version; traverse(node, nextState)  use nextState to hold returned data (this is the props for relay container); 
-                          for RelayContainer to get response data from store using AST as key
+    RelayQueryTransform (read-write version, for SPLITTING, Deferring..etc. transform graphql Query and send to server)
+    RelayQueryWrite : read version; utilize AST to pluck responsedata (POJO) and save into _recordStore
+    readRelayQueryData : read version; traverse(node, nextState)  use nextState to hold returned data (magnetic)
+                        for RelayContainer to get response data from store using AST as key
 ```
-
->AST is the most important thing in relay; it participate in the entire process of relay
+### Tree
+>AST is the most important thing in relay; it participate in the entire process of request lifecycle
 >you first write query in graphql , which is string; then babel-relay plug in parse that into AST
->once you get AST, relay use it to DIFF/ SPLIT/ Defer/PRINT  ==> request
+>once you get AST, relay uses it to DIFF/ SPLIT/ Defer/PRINT  ==> request
 >responst ==> utilze AST to serialize response into store; we effectively use AST to traverse response data and save them into store (RelayQueryWriter.js)
->AST is the `thread`
 >once serialization is done, we notify RelayContainers that data is ready, they then call _getQueryData which is another traversal using query AST
 >(readRelayQueryData.js)
 
-# How is RelayQuery sent to server?
+# How is RelayQuery sent to server? the main loop / request chain
   RelayContainer build the raw querySet => pass the relayEnvironment.primeCache => graphqlQueryRunner.runQueries{
 
 ```
@@ -90,7 +83,7 @@ graphqlQueryRunner.runQueries{
 }
 ```
 
-# store/RelayEnvironment  is pivotal
+# RelayEnvironment  is pivotal
    `RelayEnvironment` is the public API for Relay core
 
 `RelayEnvironment`
@@ -105,6 +98,8 @@ graphqlQueryRunner.runQueries{
   + primeCache
   + forceFetch
   + mutation stuff
+
+# Relay Store  
 ```  
 class RelayStoreData {
 //********************************************************************/
@@ -150,18 +145,18 @@ Relay.Query`query{
 ```
 will result into 
 -------------------------------------------------------------------------------------------------------------------
-viewer                                                       __dataID__ : 'client:-21347635687'
+viewer                  (this is the stroage key)              __dataID__ : 'client:-21347635687'
    events{id:'0:91430'} (this is the stroage key)                  __dataID__: 'event:91430'
           meeting       (this is the stroage key)                      __dataID__: 'meeting:aus_t_28_02_2017'
                id       (this is the stroage key)                                 'meeting:aus_t_28_02_2017'
                name     (this is the stroage key)                                  'bendigo'
 -------------------------------------------------------------------------------------------------------------------
-`Relay` uses __storageKey__ to diff query against recordStore and only fetch data that doesn't exist on recordStore
+`Relay` uses __storageKey__ to diff query against recordStore and only fetchs data that doesn't exist on recordStore
 
 ## trackedQuery is a map of {recordIDs: [AST1, AST2, AST3]. it's used to calculate `fields refetch` after a mutation
 
 
->Relay use __storagekey__ to determine whether it has fetched the data before or not
+>Relay uses __storagekey__ to determine whether it has fetched the data before or not
 `__storageKey == this.getSchemaName() + this.getCallsWithValues().filter(para=>_isCoreArg(para))`
 
 
@@ -225,9 +220,7 @@ RelayPendingQueryTracker.js   _handleQuerySuccess
 
 ```
 
-
-
-
+## storage key algorithm
 ```
 source: E:\relay-digest\query\RelayQuery.js, line 1335
 //************************************************************************************ */
@@ -292,11 +285,14 @@ $ for f in */*/*.ts; do mv "$f" "${f%.ts}.js";  done
 
 ## component `SearchContainer` was rendered with variables that differ from the variables used to fetch fragment `viewer`. The fragment was fetched with variables `{"status":"passed"}`, but rendered with variables `{"status":"any"}
 query -> field ->fragment->field->fragment->filed.....      __path__ contains the hierachy, see section ## about __path__ below
+
+call stack:
 ```
 throw 'RelayContainer: component A was rendered with varialbes xx that differ from the variables used to fetch..'
-getfragment + validateFragmentProp  //getfragment then calls `buildContainerFragment` to build a fragment AST
-_updateFragmentPointers
-_initialize
+RelayContainer.validateFragmentProp // if not in production
+RelayContainer.getfragment   //getfragment then calls `buildContainerFragment` to build a fragment AST
+RelayContainer._updateFragmentPointers
+RelayContainer._initialize
 ```
 
 what it is saying is that: I've a fragment (with variables#1) , and my parent has passed me a field( where my fragment is defined on) , e.g. 
@@ -331,20 +327,22 @@ Once `Relay` gets response from server, it notifies either RelayRenderer(first l
 the problem is that if you don't pass override variable to `RelayContainer`, the fragmentPointer.framgment still reference the old QueryVariables. so why?
 to figure out why we need to undrestand how fragmentPointer.fragment is built. It's actually gets built up in ` _updateFragmentPointers`  during `_initialize`, which means, everytime your `RelayContainer` gets re-rendered, the fragmentPointers get get rebuilt. 
 ```
+
 RelayContainer.js , source code line:574
+//ComponentDidMount -> setState -> _initialize -> updateFragmentPointers -> validateFragmentProp -> variables used to fetch differs from variables used to render
   _initialize(
       props: Object,
       context: RelayContainerContext,
       propVariables: Variables,
       prevVariables: ?Variables
     ): {
-              //ComponentDidMount -> setState -> _initialize -> updateFragmentPointers -> validateFragmentProp -> declared fragment isn't passed from parent React Component  if you are using mock data, ignore this warning
-                    this._updateFragmentPointers(
-                      props,
-                      context,
-                      nextVariables,  //this is the key. whatever is defined here will become fragment.variables during _getQueryData; no matter the real query varialbe is. That's why you see the warning in question
-                      prevVariables
-                    );
+        Component  if you are using mock data, ignore this warning
+              this._updateFragmentPointers(
+                props,
+                context,
+                nextVariables,  //this is the key. whatever is defined here will become fragment.variables during _getQueryData; no matter the real query varialbe is. That's why you see the warning in question
+                prevVariables
+              );
     }
 
 ```
