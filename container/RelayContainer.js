@@ -1220,11 +1220,14 @@ function validateFragmentProp(
   );
   // # ignore this warning 
   if (!hasFragmentData) {
-    const variables = fragment.getVariables();
-    const fetchedVariables = RelayFragmentPointer.getFragmentVariables(
-      prop,
-      fragment
-    );
+    /*warning.js:36 Warning: RelayContainer: component `Connect(NovaTimers(NovaContainer(BetSlipCardsHolder)))` was rendered with variables that differ from 
+    the variables used to fetch fragment `viewer`. 
+    The fragment was fetched with variables `{"eventIds":null,"shouldFetchEvents":false}`,   fetch-null
+    but rendered with variables `{"eventIds":[112870],"shouldFetchEvents":true}`             render-real
+    */
+    const variables = fragment.getVariables(); // the real one set via relay.setVarialbes()
+    const fetchedVariables = RelayFragmentPointer.getFragmentVariables(prop /*see pro? that's from parent*/, fragment); // the one passed by parent via Fragement Override -- OFTEN NULL
+
     warning(
       false,
       'RelayContainer: component `%s` was rendered with variables ' +
@@ -1240,10 +1243,10 @@ function validateFragmentProp(
       'component, in which case ignore this warning.',
       componentName,
       fragmentName,
-      fetchedVariables ?
+      fetchedVariables ? //The fragment was fetched with variables `%s`  ; headsup, see above line 1229
         fetchedVariables.map(vars => JSON.stringify(vars)).join(', ') :
         '(not fetched)',
-      JSON.stringify(variables),
+      JSON.stringify(variables), // but rendered with variables `%s` ; headsup, see above line 1228
       componentName,
       fragmentName,
       componentName,

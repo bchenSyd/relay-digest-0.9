@@ -283,7 +283,7 @@ $ for f in */*/*.ts; do mv "$f" "${f%.ts}.js";  done
 
 ```
 
-## component `SearchContainer` was rendered with variables that differ from the variables used to fetch fragment `viewer`. The fragment was fetched with variables `{"status":"passed"}`, but rendered with variables `{"status":"any"}
+## component `SearchContainer` was rendered with variables that differ from the variables used to fetch fragment `viewer`. The fragment was fetched with variables `{"status":"null"}`, but rendered with variables `{"status":"passed"}`
 query -> field ->fragment->field->fragment->filed.....      __path__ contains the hierachy, see section ## about __path__ below
 
 call stack:
@@ -295,7 +295,11 @@ RelayContainer._updateFragmentPointers
 RelayContainer._initialize
 ```
 
-what it is saying is that: I've a fragment (with variables#1) , and my parent has passed me a field( where my fragment is defined on) , e.g. 
+what it is saying is that: 1. I've a fragment with `variables#rendered` (seeing is believing) which was set via this.props.relay.setVariables({...updatedVars})),
+                              and can be retrieved by `fragment.getVariables()`;
+                           2. My parent passed me a field( where my fragment is defined in. i.e. the 'container'), with variables
+                              `variables#fetched` set via `Fragement Override (react props)`, and can be retrieved by 
+                              `RelayFragmentPointer.getFragmentVariables(prop /*indicates parent*/, fragment)`. e.g.
 viewer:{ 
   __dataId__:'client:1234',  //the field object fragent is defined on
   counter:10,   //fileds that my parent has queried; shouldn't pass to me as I didn't ask for it
@@ -306,13 +310,23 @@ viewer:{
       3::client   //this is what `$childContainer2.getFragment('viewer',varialbes)` gets resolved into from Parent container
   }
 
+```
+ RelayFragmentPointer. getFragmentVariables: function getFragmentVariables(prop /*the field passed from parent*/, fragment) {
+    var fragmentMap = prop.__fragments__; // field in parent contains all fragments defined under it
+    if (typeof fragmentMap === 'object' && fragmentMap != null) {
+      var _fragmentID2 = fragment.getConcreteFragmentID(); // what is MY fragment id? AST node id often 1::client / d::client ...etc (this.__concreteNode__.id;)
+      return fragmentMap[_fragmentID2]; // fragementMap **only** contains variables
+    }
+    return null;
+  },
+```
 
 I'm trying to build up my fragmentPointer so that I can use it to retreive data from store( only I can do that my spec is opaque to my parent).
 After I've built up my fragmentPointer, since i'm not in production, it's always nice to check if my fragment is 'client:1234.2::client' (i.e. do they match?)
 in case I can't find the fragment from fragment-container (if(!hasFragmentData){ throw warning}).
 ```
-Here is variables#1 that is about to be used to render (_getQueryData);
-and here is variables#2 which is used to fetch(passed from parent)
+Here is variables#render that is about to be used to render (_getQueryData);
+and here is variables#fetch which was passed from parent
 ```
 Once `Relay` gets response from server, it notifies either RelayRenderer(first load) or corresponding RelayContainer that data is ready; RelayRenderer or RelayContainer will then query data from relay store. The 'token' they use to fetch data is their fragmentPointer, i.e. the relay spec (each RelayContainer has a Relay Fragment)
 ```
@@ -320,11 +334,11 @@ Once `Relay` gets response from server, it notifies either RelayRenderer(first l
   {
      var fragmentPointers = this._fragmentPointers;
      foreach(fragment in fragments){
-        fragmentResolver.resolve(fragmentPointer.fragment, fragmentPointer.dataIDs) //dataIDs is parent fragment dataID. it's normally something like 'client:14578962' becuase the root viewer field doesn't have a server id (a singleton in most cases)
+        fragmentResolver.resolve(fragmentPointer.fragment, fragmentPointer.dataIDs) //dataIDs is parent fragment dataID. it's normally something like 'client:14578962'                                                                                  //becuase the root viewer field doesn't have a server id (a singleton in most cases)
      })
   }
 ```
-the problem is that if you don't pass override variable to `RelayContainer`, the fragmentPointer.framgment still reference the old QueryVariables. so why?
+the problem is that if you don't pass override variable to `RelayContainer`, the fragmentPointer.framgment still refer to the old QueryVariables. why is the case?
 to figure out why we need to undrestand how fragmentPointer.fragment is built. It's actually gets built up in ` _updateFragmentPointers`  during `_initialize`, which means, everytime your `RelayContainer` gets re-rendered, the fragmentPointers get get rebuilt. 
 ```
 
@@ -340,10 +354,13 @@ RelayContainer.js , source code line:574
               this._updateFragmentPointers(
                 props,
                 context,
-                nextVariables,  //this is the key. whatever is defined here will become fragment.variables during _getQueryData; no matter the real query varialbe is. That's why you see the warning in question
+                nextVariables,  // #fetch version, RelayFragmentPointer version, null version
                 prevVariables
               );
     }
+
+    ....
+    setVarialbes({xxx}) // #render version, fragment.getVariables version, non-null version
 
 ```
 
