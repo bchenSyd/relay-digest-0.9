@@ -82,7 +82,6 @@ graphqlQueryRunner.runQueries{
       }
 }
 ```
-
 # RelayEnvironment  is pivotal
    `RelayEnvironment` is the public API for Relay core
 
@@ -384,4 +383,93 @@ client:12919406  //root field
                           1: field
                               __children: array \ 0:field 1: fragment 2: fragment...
                           2: fragment
+```
+
+# nuts and bolts
+> field can contain fileds and fragments; fragment can contain fields and fragments
+
+```
+query {
+  viewer: { ...Fb }
+}
+
+App.desktop.tsx {
+   render{
+     <div>
+         {/* viewer container handled by relay-router */}
+         {children}// F8:could be RacingLobby/Event/MyRacingBets...
+     </div>
+   }
+   Relay.Container('app',{
+     fragments:{
+        viewer:(variables)=>Relay.QL`
+            fragment on Viewer{
+               ...Fa  #carousel
+               ...F10 # next to go
+               ...F9  #betSlip
+            }
+          `
+     }
+   
+   })
+}
+
+
+F9 : Carousel.tsx{
+  render()
+  Relay.Container('Carousel',{
+    fragments:{
+      viewer:(variables)=>Relay.QL`
+          fragment on Viewer{
+             events(filterBy:'Carousel'){
+                 id
+                 origId,
+                 ...F7
+             }
+        }
+      `
+    }
+  })
+}
+
+// the viewer container object is passed by React-Relay-Router implicitly
+F8: RacingLobby.tsx{
+  render()
+  Relay.Container('RacingLobby',{
+    fragments:{
+      viewer: (variables)=>Relay.QL`
+          fragment on Viewer{
+              races(){
+                  id
+                  name,
+                  countryCode,
+                  outcomeDateString
+                  ...
+              }
+          }
+      }`
+    }
+  })
+}
+
+F8: Event.tsx{
+  render()
+  Relay.Container('RacingLobby',{
+    fragments:{
+      viewer: (variables)=>Relay.QL`
+          fragment on Viewer{
+            #evnetId from route
+              Event(id:$eventId){ 
+                  id
+                  name,
+                  countryCode,
+                  outcomeDateString
+                  ...
+              }
+          }
+      }`
+    }
+  })
+}
+
 ```
