@@ -84,7 +84,9 @@ graphqlQueryRunner.runQueries{
 ```
 
 # RelayEnvironment  is pivotal
-   `RelayEnvironment` is the public API for Relay core
+>An instance of a Relay Environment encapsulates an in-memory cache of GraphQL data and a network layer that provides access to your GraphQL server. The Environment object is typically not used by developers directly, instead it is passed to each QueryRenderer, which uses the environment to access, modify, and fetch data. Within a container, the current environment can be accessed via this.props.relay.environment. This is most commonly used to execute a mutation.
+
+`RelayEnvironment` is the public API of Relay core, and it mostly deals with `QueryRenderer`
 
 `RelayEnvironment`
   + RelayStoreData
@@ -92,7 +94,7 @@ graphqlQueryRunner.runQueries{
         +  _recordStore: RelayRecordStore;
         +  _cachedStore: RelayRecordStore;
         +  _queryTracker
-        +  _networkLayer
+  +  _networkLayer
   + ApplyUpdate
   + CommitUpdate
   + primeCache
