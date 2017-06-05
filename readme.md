@@ -82,7 +82,6 @@ graphqlQueryRunner.runQueries{
       }
 }
 ```
-
 # RelayEnvironment  is pivotal
 >An instance of a Relay Environment encapsulates an in-memory cache of GraphQL data and a network layer that provides access to your GraphQL server. The Environment object is typically not used by developers directly, instead it is passed to each QueryRenderer, which uses the environment to access, modify, and fetch data. Within a container, the current environment can be accessed via this.props.relay.environment. This is most commonly used to execute a mutation.
 
@@ -386,4 +385,93 @@ client:12919406  //root field
                           1: field
                               __children: array \ 0:field 1: fragment 2: fragment...
                           2: fragment
+```
+
+# nuts and bolts
+> field can contain fileds and fragments; fragment can contain fields and fragments
+
+```
+query {
+  viewer: { ...Fb }
+}
+
+App.desktop.tsx {
+   render{
+     <div>
+         {/* viewer container handled by relay-router */}
+         {children}// F8:could be RacingLobby/Event/MyRacingBets...
+     </div>
+   }
+   Relay.Container('app',{
+     fragments:{
+        viewer:(variables)=>Relay.QL`
+            fragment on Viewer{
+               ...Fa  #carousel
+               ...F10 # next to go
+               ...F9  #betSlip
+            }
+          `
+     }
+   
+   })
+}
+
+
+F9 : Carousel.tsx{
+  render()
+  Relay.Container('Carousel',{
+    fragments:{
+      viewer:(variables)=>Relay.QL`
+          fragment on Viewer{
+             events(filterBy:'Carousel'){
+                 id
+                 origId,
+                 ...F7
+             }
+        }
+      `
+    }
+  })
+}
+
+// the viewer container object is passed by React-Relay-Router implicitly
+F8: RacingLobby.tsx{
+  render()
+  Relay.Container('RacingLobby',{
+    fragments:{
+      viewer: (variables)=>Relay.QL`
+          fragment on Viewer{
+              races(){
+                  id
+                  name,
+                  countryCode,
+                  outcomeDateString
+                  ...
+              }
+          }
+      }`
+    }
+  })
+}
+
+F8: Event.tsx{
+  render()
+  Relay.Container('RacingLobby',{
+    fragments:{
+      viewer: (variables)=>Relay.QL`
+          fragment on Viewer{
+            #evnetId from route
+              Event(id:$eventId){ 
+                  id
+                  name,
+                  countryCode,
+                  outcomeDateString
+                  ...
+              }
+          }
+      }`
+    }
+  })
+}
+
 ```
