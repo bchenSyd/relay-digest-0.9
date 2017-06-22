@@ -356,6 +356,8 @@ git rm */*/__tests__ -r
 ```
 
 ## change to *.ts  => then changed it back becuase Realy was using JS with Flow, not TypeScript
+>${f%.*} : gobble '.*'  ,strip it and return the new value;  //e.g  'abc.ts' -> 'abc'
+>${f#.*} : gobble '.*'  and return it; //e.g. 'abc.ts' -> '.ts'
 ```
 bo1014240@IPP-LTP-6274DJL MINGW64 D:/relay-digest (master)
 boche1@UNISYDWS065 MINGW64 /e/relay-digest (master)
@@ -364,6 +366,11 @@ $ for f in */*.ts; do mv "$f" "${f%.ts}.js";  done
 boche1@UNISYDWS065 MINGW64 /e/relay-digest (master)
 $ for f in */*/*.ts; do mv "$f" "${f%.ts}.js";  done
 
+
+$ for f in */**/logs*; do echo  mv "$f"  "trip.${f#*.}"; done
+mv pages/trip/logs.json trip.json
+mv pages/trip/logs.wxml trip.wxml
+mv pages/trip/logs.wxss trip.wxss
 ```
 
 ## component `SearchContainer` was rendered with variables that differ from the variables used to fetch fragment `viewer`. The fragment was fetched with variables `{"status":"null"}`, but rendered with variables `{"status":"passed"}`
