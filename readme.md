@@ -356,8 +356,9 @@ git rm */*/__tests__ -r
 ```
 
 ## change to *.ts  => then changed it back becuase Realy was using JS with Flow, not TypeScript
->${f%.*} : gobble '.*'  ,strip it and return the new value;  //e.g  'abc.ts' -> 'abc'
->${f#.*} : gobble '.*'  and return it; //e.g. 'abc.ts' -> '.ts'
+>${f%.*} : strip suffix: gobble and strip, from end to beginning; //e.g  'abc.ts' -> strip suffix '.ts'
+>${f#\*.} : strip prefix: gobble and strip, from beginning to end; //e.g. 'abc.ts' -> strip prefix 'abc.'
+task1: change all `.ts` to `.js`
 ```
 bo1014240@IPP-LTP-6274DJL MINGW64 D:/relay-digest (master)
 boche1@UNISYDWS065 MINGW64 /e/relay-digest (master)
@@ -365,12 +366,20 @@ $ for f in */*.ts; do mv "$f" "${f%.ts}.js";  done
 
 boche1@UNISYDWS065 MINGW64 /e/relay-digest (master)
 $ for f in */*/*.ts; do mv "$f" "${f%.ts}.js";  done
+```
 
-
-$ for f in */**/logs*; do echo  mv "$f"  "trip.${f#*.}"; done
-mv pages/trip/logs.json trip.json
-mv pages/trip/logs.wxml trip.wxml
-mv pages/trip/logs.wxss trip.wxss
+task 2: change all `trip.*` to `trips.*`
+```
+# 1. rename folder tip to tips
+bochen2014@bo-vm-db01 MINGW64 /c/Trunk/frankel
+$ mv ./pages/trip  ./pages/trips
+#2. rename files
+bochen2014@bo-vm-db01 MINGW64 /c/Trunk/frankel
+$  for f in */*/trip*; do echo mv "$f"  "${f%/*}/trips.${f#*.}"; done
+mv pages/trips/trip.js pages/trips/trips.js
+mv pages/trips/trip.json pages/trips/trips.json
+mv pages/trips/trip.wxml pages/trips/trips.wxml
+mv pages/trips/trip.wxss pages/trips/trips.wxss
 ```
 
 ## component `SearchContainer` was rendered with variables that differ from the variables used to fetch fragment `viewer`. The fragment was fetched with variables `{"status":"null"}`, but rendered with variables `{"status":"passed"}`
