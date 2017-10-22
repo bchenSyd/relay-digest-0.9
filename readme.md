@@ -1,3 +1,14 @@
+## DefinePlugin
+> d:\__work\relay-digest\node_modules\warning\warning.js
+
+```javascript
+var __DEV__ = process.env.NODE_ENV !== 'production';
+
+var warning = function() {};
+
+if (__DEV__) {
+  warning = function(condition, format, args) {
+```
 # `Relay Deep Dive` by Greg Hurrell
 ## process
 ```
