@@ -9,6 +9,63 @@ var warning = function() {};
 if (__DEV__) {
   warning = function(condition, format, args) {
 ```
+
+# `react-relay/classic`
+
+pay attention to `GraphQLQueryRunner.js :: runQueries` and `RelayReadyState.js::_onReadyStateChange`
+
+```javascript
+GraphQLQueryRunner.js
+
+function runQueries(storeData, querySet, callback, fetchMode) {
+
+                ......
+    // line #157
+    var flattenedQueries = splitAndFlattenQueries(storeData, queries);
+
+    var networkEvent = [];
+    if (flattenedQueries.length) {
+      networkEvent.push({ type: 'NETWORK_QUERY_START' });
+    }
+
+    flattenedQueries.forEach(function (query) {
+      var pendingFetch = storeData.getPendingQueryTracker().add({ query: query, fetchMode: fetchMode, forceIndex: forceIndex, storeData: storeData });
+      var queryID = query.getID();
+      remainingFetchMap[queryID] = pendingFetch;
+      if (!query.isDeferred()) {
+        remainingRequiredFetchMap[queryID] = pendingFetch;
+      }
+      pendingFetch.getResolvedPromise().then(onResolved.bind(null, pendingFetch), onRejected.bind(null, pendingFetch));
+    });
+
+
+    function onRejected(pendingFetch, error) {
+       readyState.update({ error: error }, [{ type: 'NETWORK_QUERY_ERROR', error: error }]);
+    }
+
+RelayReadyState.js , line#70
+      RelayReadyState.prototype._mergeState = function _mergeState(nextReadyState, newEvents) {
+
+        require('fbjs/lib/resolveImmediate')(function () {
+          _this._scheduled = false;
+            if(_this._readyState.error){
+              debugger; 
+              /*
+              {   0  :  {type: "NETWORK_QUERY_START"}
+                  1  :  {type: "CACHE_RESTORE_START"}
+                  2  :  {type: "CACHE_RESTORE_FAILED"}
+                  3  :  {type: "NETWORK_QUERY_ERROR", error: Error: fetchWithRetries(): Still no successful response after 3 retries, giving up}
+              }
+              */
+            }
+            // *******************************************************************
+                       _this._onReadyStateChange(_this._readyState);
+            // *******************************************************************
+        });
+      }
+
+```
+
 # `Relay Deep Dive` by Greg Hurrell
 ## process
 ```
