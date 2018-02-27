@@ -103,7 +103,7 @@ Render
 # How is RelayQuery sent to server? the main loop / request chain
   RelayContainer build the raw querySet => pass the relayEnvironment.primeCache => graphqlQueryRunner.runQueries{
 
-```
+```js
 graphqlQueryRunner.runQueries{
 
       storeData.getTaskQueue().enqueue(function () {
@@ -169,7 +169,7 @@ graphqlQueryRunner.runQueries{
   + mutation stuff
 
 # Relay Store  
-```  
+```js  
 class RelayStoreData {
 //********************************************************************/
   //I have 3 record store; one for records, one for queued records (optimistic updates), and one for cached record
@@ -202,7 +202,7 @@ just check  `this._fragmentPointers-> ... -> fragment -> __concreteNode__ -> nam
 ## recordID is the id field of an object, it's the unique identifier for an object
 
 ## __storagekey__ is the record store path. e.g.
-```
+```js
 Relay.Query`query{
    viewer{
       events(id:$id) {
@@ -243,7 +243,7 @@ fragment on Store{
 `diffRelayQuery` will workout `__storageKey__` nodes for the query AST and look up store for that  `__storagekey__`
 For the first time Relay can't find the record, so `diffRelayQuery` returns diffNode and that diffNode gets sent to server
 after server responded with data, Relay update store with 
-```
+```js
 _records{
 
   Person:2 {   
@@ -261,7 +261,7 @@ _records{
     country_code:'cn',   //from query#2
     id:'Store:1',
     Person{dummy:'some-data-from-parent',status:'passed'}{      // !! this is the __storagekey__ we are talking about !!
-        __dataID__:'Person2"
+        __dataID__:'Person2'
     }
 
   }
@@ -290,7 +290,7 @@ RelayPendingQueryTracker.js   _handleQuerySuccess
 ```
 
 ## storage key algorithm
-```
+```js
 source: E:\relay-digest\query\RelayQuery.js, line 1335
 //************************************************************************************ */
   /**
@@ -321,8 +321,9 @@ source: E:\relay-digest\query\RelayQuery.js, line 1335
 # `babel-relay-plugin`
 
 # relay 
-1. `babel-relay-plugin` transpiles graphql queries into IIFE expression. 
-The IIFE returns a query descriptor which can be executed under ES5 syntax
+1. `babel-relay-plugin` transpiles graphql queries into `IIFE` expression. 
+The `IIFE` returns a query descriptor which can be executed under ES5 syntax
+```js
 Relay.QL`
 { person(id:1){
     name
@@ -337,22 +338,20 @@ Relay.QL`
       metadata:object
         name:'Person'
         type:'Person'
-  } //the take away is that, this query descriptor contains all MEMBERS and TYPES of the object being queried
- 
- 
+  } 
+  /*the take away is that, this query descriptor contains all MEMBERS and TYPES of the object being queried
   " Our transpiled query is now aware of all the types of all the fields in the query object.
-    This gives relay much more power in what it can do with the query"  Samer buna
-
-
+    This gives relay much more power in what it can do with the query"  Samer buna */
 })();
+```
 To be able to transpile, `babel-replay-plugin` needs the **FULL JSON schema defination**
 which is why `introspectionQuery` is required
 
-the graphql query can be validate and transpiled using the schema.json file
+the graphql query can be validate and transpiled using the `schema.json` file
 becuase json contains the full schema definition (a bit like wsdl of webservice)
 
-2. you can refer to fields within edge-node pattern,  but you can't with a node(id) query
-```
+2. you can refer to fields within `connection-edge` pattern,  but you can't with a `node(id)` query
+```js
 { 
   viewer{
     todos{
@@ -370,7 +369,7 @@ becuase json contains the full schema definition (a bit like wsdl of webservice)
 
 you can't refer to fields other than id and __typename (both defined at node level, namely idFetcher and type_resolver), becuase
 graphQL doesn't have enought information to infer the node type (can only be determined at run time);
-```
+```js
 {node(id:"VG9kbzow"){
   id,
   __typename,  #this can only be determined at runtime by NodeInterface.typeResolver;
@@ -380,7 +379,7 @@ graphQL doesn't have enought information to infer the node type (can only be det
 you can cast the node to a concrete graphQL type, if you cast is invalid, graphql won't throw error but return empty
 in below example, node#"VG9kbzow" is of type `todo`, so the first query will return correct data;
 in the second query, we are trying to cast the node to a `User` object, which is no a valid cast
-```
+```js
 {node(id:"VG9kbzow"){		       		|							{node(id:"VG9kbzow"){
   id,								              |								 id,
   __typename,					          	|								 __typename,
@@ -454,7 +453,7 @@ mv pages/trips/trip.wxss pages/trips/trips.wxss
 query -> field ->fragment->field->fragment->filed.....      __path__ contains the hierachy, see section ## about __path__ below
 
 call stack:
-```
+```js
 throw 'RelayContainer: component A was rendered with varialbes xx that differ from the variables used to fetch..'
 RelayContainer.validateFragmentProp // if not in production
 RelayContainer.getfragment   //getfragment then calls `buildContainerFragment` to build a fragment AST
@@ -462,9 +461,9 @@ RelayContainer._updateFragmentPointers
 RelayContainer._initialize
 ```
 
-what it is saying is that: 1. I've a fragment with `variables#rendered` (seeing is believing) which was set via this.props.relay.setVariables({...updatedVars})),
-                              and can be retrieved by `fragment.getVariables()`;
-                           2. My parent passed me a field( where my fragment is defined in. i.e. the 'container'), with variables
+what it is saying is that: 
+1. I've a fragment with `variables#rendered` (seeing is believing) which was set via `this.props.relay.setVariables({...updatedVars}))`, and can be retrieved by `fragment.getVariables()`;
+2. My parent passed me a field( where my fragment is defined in. i.e. the 'container'), with variables
                               `variables#fetched` set via `Fragement Override (react props)`, and can be retrieved by 
                               `RelayFragmentPointer.getFragmentVariables(prop /*indicates parent*/, fragment)`. e.g.
 viewer:{ 
@@ -477,7 +476,7 @@ viewer:{
       3::client   //this is what `$childContainer2.getFragment('viewer',varialbes)` gets resolved into from Parent container
   }
 
-```
+```js
  RelayFragmentPointer. getFragmentVariables: function getFragmentVariables(prop /*the field passed from parent*/, fragment) {
     var fragmentMap = prop.__fragments__; // field in parent contains all fragments defined under it
     if (typeof fragmentMap === 'object' && fragmentMap != null) {
@@ -491,33 +490,35 @@ viewer:{
 I'm trying to build up my fragmentPointer so that I can use it to retreive data from store( only I can do that my spec is opaque to my parent).
 After I've built up my fragmentPointer, since i'm not in production, it's always nice to check if my fragment is 'client:1234.2::client' (i.e. do they match?)
 in case I can't find the fragment from fragment-container (if(!hasFragmentData){ throw warning}).
-```
-Here is variables#render that is about to be used to render (_getQueryData);
-and here is variables#fetch which was passed from parent
-```
-Once `Relay` gets response from server, it notifies either RelayRenderer(first load) or corresponding RelayContainer that data is ready; RelayRenderer or RelayContainer will then query data from relay store. The 'token' they use to fetch data is their fragmentPointer, i.e. the relay spec (each RelayContainer has a Relay Fragment)
-```
+Here is `variables#render` that is about to be used to render (_getQueryData);
+and here is `variables#fetch `which was passed from parent
+
+
+Once `Relay` gets response from server, it notifies either `RelayRenderer`(first load) or corresponding `RelayContainer` that data is ready; `RelayRenderer` or `RelayContainer` will then query data from relay store. The handle they use to query data from relay store is their fragmentPointer, i.e. the relay spec (each `RelayContainer` has a Relay Fragment)
+```js
   RelayContainer.prototype._getQueryData = function _getQueryData(props) 
   {
      var fragmentPointers = this._fragmentPointers;
      foreach(fragment in fragments){
-        fragmentResolver.resolve(fragmentPointer.fragment, fragmentPointer.dataIDs) //dataIDs is parent fragment dataID. it's normally something like 'client:14578962'                                                                                  //becuase the root viewer field doesn't have a server id (a singleton in most cases)
+       //dataIDs is parent fragment dataID. it's normally something like 'client:14578962'                                                    //becuase the root viewer field doesn't have a server id (a singleton in most cases)
+        fragmentResolver.resolve(fragmentPointer.fragment, fragmentPointer.dataIDs) 
      })
   }
 ```
-the problem is that if you don't pass override variable to `RelayContainer`, the fragmentPointer.framgment still refer to the old QueryVariables. why is the case?
-to figure out why we need to undrestand how fragmentPointer.fragment is built. It's actually gets built up in ` _updateFragmentPointers`  during `_initialize`, which means, everytime your `RelayContainer` gets re-rendered, the fragmentPointers get get rebuilt. 
-```
 
+the problem is that if you don't pass override variable to `RelayContainer`, the fragmentPointer.framgment still refer to the old QueryVariables. why is the case?
+
+to figure out why we need to undrestand how fragmentPointer.fragment is built. It's actually gets built up in ` _updateFragmentPointers`  during `_initialize`, which means, everytime your `RelayContainer` gets re-rendered, the fragmentPointers get get rebuilt. 
+```js
 RelayContainer.js , source code line:574
-//ComponentDidMount -> setState -> _initialize -> updateFragmentPointers -> validateFragmentProp -> variables used to fetch differs from variables used to render
+// ComponentDidMount -> setState -> _initialize -> updateFragmentPointers -> validateFragmentProp -> variables 
+// used to fetch differs from variables used to render
   _initialize(
       props: Object,
       context: RelayContainerContext,
       propVariables: Variables,
       prevVariables: ?Variables
     ): {
-        Component  if you are using mock data, ignore this warning
               this._updateFragmentPointers(
                 props,
                 context,
@@ -527,6 +528,8 @@ RelayContainer.js , source code line:574
     }
 
     ....
+
+
     setVarialbes({xxx}) // #render version, fragment.getVariables version, non-null version
 
 ```
@@ -556,7 +559,7 @@ client:12919406  //root field
 # nuts and bolts
 > field can contain fileds and fragments; fragment can contain fields and fragments
 
-```
+```js
 query {
   viewer: { ...Fb }
 }
