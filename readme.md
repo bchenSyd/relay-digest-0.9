@@ -426,22 +426,22 @@ git rm */*/__tests__ -r
 >${f%.*} : strip suffix: gobble and strip, from end to beginning; //e.g  'abc.ts' -> strip suffix '.ts'
 >${f#\*.} : strip prefix: gobble and strip, from beginning to end; //e.g. 'abc.ts' -> strip prefix 'abc.'
 task1: change all `.ts` to `.js`
-```
-bo1014240@IPP-LTP-6274DJL MINGW64 D:/relay-digest (master)
-boche1@UNISYDWS065 MINGW64 /e/relay-digest (master)
+```bash
+D:/relay-digest (master)
+> /e/relay-digest (master)
 $ for f in */*.ts; do mv "$f" "${f%.ts}.js";  done
 
-boche1@UNISYDWS065 MINGW64 /e/relay-digest (master)
+> /e/relay-digest (master)
 $ for f in */*/*.ts; do mv "$f" "${f%.ts}.js";  done
 ```
 
 task 2: change all `trip.*` to `trips.*`
-```
+```bash
 # 1. rename folder tip to tips
-bochen2014@bo-vm-db01 MINGW64 /c/Trunk/frankel
+> MINGW64 /c/Trunk/frankel
 $ mv ./pages/trip  ./pages/trips
 #2. rename files
-bochen2014@bo-vm-db01 MINGW64 /c/Trunk/frankel
+> MINGW64 /c/Trunk/frankel
 $  for f in */*/trip*; do echo mv "$f"  "${f%/*}/trips.${f#*.}"; done
 mv pages/trips/trip.js pages/trips/trips.js
 mv pages/trips/trip.json pages/trips/trips.json
@@ -527,8 +527,6 @@ RelayContainer.js , source code line:574
               );
     }
 
-    ....
-
 
     setVarialbes({xxx}) // #render version, fragment.getVariables version, non-null version
 
@@ -538,7 +536,7 @@ RelayContainer.js , source code line:574
 I reckon that   __path__ is used to pass (fragment containing field ) from parent container   to child container
    __path__ contains the hierachy
 
-```
+```js
 client:12919406  //root field
     __path__: RelayQueryRoot
         type:'root'
